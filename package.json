@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "puppeteer-stream": "^3.0.7"
+  }
+}
