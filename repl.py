@@ -2,7 +2,7 @@ import subprocess
 import threading
 import queue
 import time
-from nlp_parser import ai_command
+
 def read_output(out, queue, output_done):
     for line in iter(out.readline, ''):
         queue.put(line)
@@ -41,7 +41,6 @@ try:
 
     while True:
         command = input("Enter command: ")
-        command = ai_command(command)
         if command.lower() in ["exit", "quit"]:
             break
 
