@@ -5,7 +5,7 @@ const file = fs.createWriteStream(__dirname + "/test.webm");
 
 async function test() {
 	const browser = await launch({
-        executablePath: '/path/to/your/chrome'
+        executablePath: '/Applications/Chromium.app/Contents/MacOS/Chromium',
 		defaultViewport: {
 			width: 1920,
 			height: 1080,
