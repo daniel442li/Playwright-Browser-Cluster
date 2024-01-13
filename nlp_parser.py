@@ -123,5 +123,6 @@ def ai_command(command):
     function_name = (assistant_message['tool_calls'][0]['function']['name'])
     argument_string = json.loads(assistant_message['tool_calls'][0]['function']['arguments'])
     converted_command = convert_command(function_name, argument_string)
+    print(converted_command)
     return converted_command
 
