@@ -63,22 +63,18 @@ tools = [
     {
         "type": "function",
         "function": {
-            "name": "get_current_weather",
-            "description": "Get the current weather",
+            "name": "type",
+            "description": "Types/searches into the page",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "location": {
                         "type": "string",
-                        "description": "The city and state, e.g. San Francisco, CA",
+                        "description": "The item that they want to type into the page",
                     },
-                    "format": {
-                        "type": "string",
-                        "enum": ["celsius", "fahrenheit"],
-                        "description": "The temperature unit to use. Infer this from the users location.",
-                    },
+                   
                 },
-                "required": ["location", "format"],
+                "required": ["location"],
             },
         }
     },
@@ -95,7 +91,7 @@ tools = [
                         "description": "The url of the website to navigate to",
                     }
                 },
-                "required": ["link", "format", "num_days"]
+                "required": ["link"]
             },
         }
     },
@@ -122,7 +118,7 @@ def ai_command(command):
     messages.append(assistant_message)
     function_name = (assistant_message['tool_calls'][0]['function']['name'])
     argument_string = json.loads(assistant_message['tool_calls'][0]['function']['arguments'])
+    print(function_name)
     converted_command = convert_command(function_name, argument_string)
-    print(converted_command)
     return converted_command
 

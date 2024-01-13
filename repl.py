@@ -24,13 +24,25 @@ output_thread = threading.Thread(target=read_output, args=(process.stdout, outpu
 output_thread.daemon = True
 output_thread.start()
 
+
+cookies = [{
+        'name': 'li_at',
+        'value': 'AQEDAStP9dYDmAa8AAABjQQs-DsAAAGNKDl8O04AtTnN10CX0bDxvPgQPWSD2YF7CIFVBbe5VfggjPe8z6rH7xcAHpi_XPSwLFhWa4BQlMy86Hw6Rlt0Dce5mc11WWGMZJpoIj_xcwTR7kFQJYYP_yI3',
+        'domain': 'www.linkedin.com',
+        'path': '/',
+        # You can add other properties like 'expires', 'httpOnly', etc.
+    }]
+
 initial_commands = [
     "from playwright.sync_api import sync_playwright",
     "playwright = sync_playwright().start()",
     "browser = playwright.chromium.launch(headless=False)",
-    "page = browser.new_page()",
-    "page.goto('https://playwright.dev/')"
+    "context = browser.new_context()",
+    "page = context.new_page()",
+    "page.goto('https://playwright.dev/')",
+    "context.add_cookies(" + str(cookies) + ")"
 ]
+
 
 try:
     print("Welcome to the future")

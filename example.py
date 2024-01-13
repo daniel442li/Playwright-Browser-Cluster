@@ -1,17 +1,33 @@
-import asyncio
-from playwright.async_api import async_playwright
+from playwright.sync_api import sync_playwright
+import time
 
-async def main():
-    async with async_playwright() as p:
-        # Launch browser in non-headless mode
-        browser = await p.chromium.launch(headless=False)
-        page = await browser.new_page()
-        await page.goto("http://playwright.dev")
-        print(await page.title())
-        # Keep the browser open for a while, e.g., 10 seconds
-        await asyncio.sleep(10)
-        await browser.close()
+def run(playwright):
+    browser = playwright.chromium.launch(headless=False)
+    context = browser.new_context()
 
-asyncio.run(main())
+    # Define LinkedIn cookie
+    cookies = [{
+        'name': 'li_at',
+        'value': 'AQEDAStP9dYDmAa8AAABjQQs-DsAAAGNKDl8O04AtTnN10CX0bDxvPgQPWSD2YF7CIFVBbe5VfggjPe8z6rH7xcAHpi_XPSwLFhWa4BQlMy86Hw6Rlt0Dce5mc11WWGMZJpoIj_xcwTR7kFQJYYP_yI3',
+        'domain': 'www.linkedin.com',
+        'path': '/',
+        # You can add other properties like 'expires', 'httpOnly', etc.
+    }]
 
-#/Users/daniel-li/Code/browser-backend/venv/bin/python -m asyncio
+    # Add cookie to the context
+    context.add_cookies(cookies)
+
+    # Open new page
+    page = context.new_page()
+
+    # Navigate to LinkedIn
+    page.goto('https://www.linkedin.com')
+
+    # Perform your actions here
+    time.sleep(10)
+
+    # Close the browser
+    browser.close()
+
+with sync_playwright() as playwright:
+    run(playwright)
