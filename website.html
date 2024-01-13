@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Screenshot Viewer</title>
+    <script>
+        function refreshImage() {
+            const image = document.getElementById('liveImage');
+            image.src = '/latest-screenshot?' + new Date().getTime(); // Cache busting
+        }
+
+        setInterval(refreshImage, 1000); // Refresh every second
+    </script>
+</head>
+<body>
+    <img id="liveImage" src="/latest-screenshot" alt="Live Screenshot">
+</body>
+</html>
