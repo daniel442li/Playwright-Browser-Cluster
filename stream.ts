@@ -1,9 +1,9 @@
 const { launch, getStream } = require("puppeteer-stream");
-const fs = require("fs");
+const ffmpeg = require('fluent-ffmpeg');
+const stream = require('stream');
 
-const file = fs.createWriteStream(__dirname + "/test.webm");
-
-async function test() {
+async function startStreaming() {
+    // Launching Puppeteer browser
     const browser = await launch({
         executablePath: '/Applications/Chromium.app/Contents/MacOS/Chromium',
         defaultViewport: {
@@ -13,41 +13,60 @@ async function test() {
         headless: true,
     });
 
+    // Opening new page and going to the video source
     const page = await browser.newPage();
-    await page.goto("https://www.youtube.com/watch?v=HXXHzdHSlGk");
+    await page.goto("https://github.com/");
     await page.setViewport({
         width: 1920,
         height: 1080,
     });
 
-    const stream = await getStream(page, {
+    // Getting stream from Puppeteer
+    const puppeteerStream = await getStream(page, {
         audio: false,
         video: true,
     });
 
-    // Event listeners for the stream
-    stream.on('data', (chunk) => {
-        console.log(`Received chunk of size: ${chunk.length} bytes`);
-        // Log the first few bytes of the chunk in hexadecimal
-        console.log(`First few bytes: ${chunk.slice(0, 10).toString('hex')}`);
-    });
+    // puppeteerStream.on('data', (chunk) => {
+    // console.log(`Received chunk of size: ${chunk.length} bytes`);
+    // // Log the first few bytes of the chunk in hexadecimal
+    // console.log(`First few bytes: ${chunk.slice(0, 10).toString('hex')}`);
+    // });
 
-    stream.on('end', () => {
-        console.log('Stream ended.');
-    });
+    // Set up a PassThrough stream for FFmpeg input
+    var input = new stream.PassThrough();
 
-    stream.on('error', (err) => {
-        console.error('Stream encountered an error:', err);
-    });
+    // Setting up FFmpeg to convert the stream to FLV and send to RTMP server
+    ffmpeg(input)
+        .format('flv')
+        .addOption('-c:v', 'libx264') // Video codec
+        .addOption('-c:a', 'aac') // Audio codec, even if there's no audio
+        .addOption('-flvflags', 'no_duration_filesize')
+        .addOption('-c:v', 'libx264')
+        .addOption('-b:v', '1000k') // Adjust bitrate as needed
+        .addOption('-preset', 'veryfast') // Adjust preset for performance
+        .addOption('-r', '30') // Reduce frame rate if necessary
+        .output('rtmp://localhost/live/your_stream_key')
+        .on('start', () => {
+            console.log('FFmpeg process started.');
+        })
+        .on('end', () => {
+            console.log('FFmpeg process finished.');
+        })
+        .on('error', (err) => {
+            console.error('Error:', err);
+        })
+        .run();
 
-    console.log("recording");
-    stream.pipe(file);
+    // Piping the puppeteerStream into the input stream for FFmpeg
+    puppeteerStream.pipe(input);
 
-    setTimeout(() => {
-        stream.destroy();
-        file.end(); // Manually end the file stream
-        console.log("streaming stopped");
-    }, 1000 * 10);
+    // Example: stopping the stream and browser after 30 seconds
+    setTimeout(async () => {
+        puppeteerStream.destroy();
+        input.end();
+        console.log("Streaming stopped");
+    }, 60000);
 }
 
-test();
+startStreaming();
