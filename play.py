@@ -2,46 +2,38 @@ import asyncio
 from playwright.async_api import async_playwright
 import time
 
-async def take_screenshots(page, interval=0.25):
-    while True:
-        try:
-            if page.is_closed() or await page.evaluate("document.readyState") == "complete":
-                break
-        except Exception as e:
-            # Handle the exception if the execution context is destroyed due to navigation
-            if "Execution context was destroyed" in str(e):
-                # Optionally, log this event if needed
-                print("Navigation in progress, retrying...")
-            else:
-                # If it's a different exception, re-raise it
-                raise
-        finally:
-            # Ensure that we always wait and take a screenshot
-            await asyncio.sleep(interval)
-            if not page.is_closed():
-                timestamp = int(time.time())
-                await page.screenshot(path=f'screenshot_{timestamp}.png')
+async def take_screenshots(page, done, interval=0.2):
+    while not done[0]:  # Check the done flag
+        if page.is_closed():
+            break
 
-async def main(url, action):
+        if not page.is_closed():
+            timestamp = int(time.time())
+            await page.screenshot(path=f'screenshot_{timestamp}.png')
+
+        await asyncio.sleep(interval)
+
+async def main():
+    done = [False]  # Initialize a flag to indicate when the main tasks are done
     async with async_playwright() as p:
-        browser = await p.chromium.launch()
+        browser = await p.chromium.launch(headless=False)
         page = await browser.new_page()
 
         # Start the screenshot task
-        screenshot_task = asyncio.create_task(take_screenshots(page))
+        screenshot_task = asyncio.create_task(take_screenshots(page, done))
 
         # Perform the main action (like page.goto)
-        await action(page)
+        await page.goto("http://google.com")
+        await page.type('#APjFqb', 'Hello, World!', delay=100)
 
-        # Wait for the screenshot task to complete
+        # Set the done flag to True to signal the screenshot task to finish
+        done[0] = True
         await screenshot_task
+
+        # Take a final screenshot if needed
+        timestamp = int(time.time())
+        await page.screenshot(path=f'screenshot_final_{timestamp}.png')
 
         await browser.close()
 
-# Example usage
-async def go_to_page(page):
-    await page.goto("http://playwright.dev")
-    # You can add other commands here as needed
-
-url = "http://playwright.dev"
-asyncio.run(main(url, go_to_page))
+asyncio.run(main())

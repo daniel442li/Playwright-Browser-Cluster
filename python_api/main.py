@@ -155,7 +155,8 @@ def initialize_browser_session(session_id):
 
 @app.post('/create_session', response_model=CreateSessionResponse)
 async def create_session():
-    session_id = str(uuid.uuid4())
+    # session_id = str(uuid.uuid4())
+    session_id = "test"
     initialize_browser_session(session_id)
     return {"session_id": session_id}
 

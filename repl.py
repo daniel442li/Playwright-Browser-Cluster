@@ -33,15 +33,25 @@ cookies = [{
         # You can add other properties like 'expires', 'httpOnly', etc.
     }]
 
+# initial_commands = [
+#     "from playwright.sync_api import sync_playwright",
+#     "playwright = sync_playwright().start()",
+#     "browser = playwright.chromium.launch(headless=False)",
+#     "context = browser.new_context()",
+#     "page = context.new_page()",
+#     "page.goto('https://playwright.dev/')",
+#     "context.add_cookies(" + str(cookies) + ")"
+# ]
+
 initial_commands = [
     "from playwright.async_api import async_playwright",
     "playwright = await async_playwright().start()",
     "browser = await playwright.chromium.launch(headless=False)",
     "context = await browser.new_context()",
-    "await page = context.new_page()",
+    "page = await context.new_page()",
     "await page.goto('https://playwright.dev/')",
     "await context.add_cookies(" + str(cookies) + ")"
-]
+    ]
 
 
 try:
