@@ -15,8 +15,8 @@ def cleanup_session(sessions, session_id):
 
 # Function to periodically check all sessions
 async def check_sessions(sessions):
-    logger.info("Checking and cleaning up sessions")
     while True:
+        logger.info("Checking and cleaning up sessions")
         for session_id in list(sessions.keys()):
             session = sessions[session_id]
             if not is_session_active(session, session_id):

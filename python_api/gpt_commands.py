@@ -73,7 +73,7 @@ tools = [
                     },
                    
                 },
-                "required": ["location"],
+                "required": ["type"],
             },
         }
     },
@@ -120,4 +120,3 @@ def ai_command(command):
     print(function_name)
     converted_command = convert_command(function_name, argument_string)
     return converted_command
-

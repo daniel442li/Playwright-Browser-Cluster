@@ -73,7 +73,7 @@ tools = [
                     },
                    
                 },
-                "required": ["location"],
+                "required": ["type"],
             },
         }
     },
@@ -121,3 +121,5 @@ def ai_command(command):
     converted_command = convert_command(function_name, argument_string)
     return converted_command
 
+
+ai_command("navigate to google.com")

@@ -115,6 +115,14 @@ def initialize_browser_session(session_id):
     output_thread.daemon = True
     output_thread.start()
 
+    cookies = [{
+        'name': 'li_at',
+        'value': 'AQEDAStP9dYDmAa8AAABjQQs-DsAAAGNKDl8O04AtTnN10CX0bDxvPgQPWSD2YF7CIFVBbe5VfggjPe8z6rH7xcAHpi_XPSwLFhWa4BQlMy86Hw6Rlt0Dce5mc11WWGMZJpoIj_xcwTR7kFQJYYP_yI3',
+        'domain': 'www.linkedin.com',
+        'path': '/',
+        # You can add other properties like 'expires', 'httpOnly', etc.
+    }]
+    
     # Your initial commands
     initial_commands = [
         "from playwright.sync_api import sync_playwright",
@@ -123,6 +131,7 @@ def initialize_browser_session(session_id):
         "context = browser.new_context()",
         "page = context.new_page()",
         "page.goto('https://playwright.dev/')",
+        "context.add_cookies(" + str(cookies) + ")"
         # Handle cookies and other initialization here...
     ]
 
@@ -165,6 +174,7 @@ async def send_command(command_request: CommandRequest):
         output_queue.get()
 
     # Send command to subprocess
+    print(command_text)
     processed_command = ai_command(command_text)
     process.stdin.write(processed_command + "\n")
     process.stdin.flush()

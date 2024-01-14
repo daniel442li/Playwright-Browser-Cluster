@@ -1,6 +1,11 @@
 from playwright.sync_api import sync_playwright
 import time
 
+def screenshot(page, name):
+    page.screenshot(path=f'{name}.png')
+
+
+
 def run(playwright):
     browser = playwright.chromium.launch(headless=False)
     context = browser.new_context()
