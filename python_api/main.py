@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv, find_dotenv
 import uuid
@@ -10,10 +11,21 @@ import subprocess
 import threading
 import queue
 import time
-
+import asyncio
+from heartbeat import check_sessions
+from gpt_commands import ai_command
 load_dotenv(find_dotenv())
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Before API starts
+    asyncio.create_task(check_sessions(sessions))
+    yield
+    # After exiting the context manager, do some cleanup
+
+
+app = FastAPI(lifespan=lifespan)
 
 # Step 2: Setup the logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -30,6 +42,11 @@ class CommandRequest(BaseModel):
 class CommandResponse(BaseModel):
     status: str
 
+class SessionList(BaseModel):
+    sessions: list
+
+class TerminateSessionResponse(BaseModel):
+    message: str
 
 # Allow CORS
 origins = [
@@ -51,9 +68,6 @@ app.add_middleware(
 sessions = {}
 
 
-
-class TerminateSessionResponse(BaseModel):
-    message: str
 
 @app.post('/terminate_session/{session_id}', response_model=TerminateSessionResponse)
 async def terminate_session(session_id: str):
@@ -132,6 +146,46 @@ async def create_session():
     initialize_browser_session(session_id)
     return {"session_id": session_id}
 
+
+@app.post('/send_command', response_model=CommandResponse)
+async def send_command(command_request: CommandRequest):
+    session_id = command_request.session_id
+    command_text = command_request.command
+
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Invalid session ID")
+
+    session = sessions[session_id]
+    process = session["process"]
+    output_queue = session["output_queue"]
+    output_done = session["output_done"]
+
+    # Clear existing output
+    while not output_queue.empty():
+        output_queue.get()
+
+    # Send command to subprocess
+    processed_command = ai_command(command_text)
+    process.stdin.write(processed_command + "\n")
+    process.stdin.flush()
+
+    # Wait for output with a timeout
+    output = []
+    timeout = 1.0  # Adjust timeout as needed
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        while not output_queue.empty():
+            output.append(output_queue.get())
+        if output_done.is_set():
+            break
+        await asyncio.sleep(0.1)  # Non-blocking sleep
+
+    return {"status": "Command executed", "output": output}
+
+
+@app.get('/get_sessions', response_model=SessionList)
+async def get_sessions():
+    return {"sessions": list(sessions.keys())}
 
 
 
