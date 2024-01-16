@@ -1,11 +1,12 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv, find_dotenv
 import uuid
-
+from typing import Dict
 import logging
 import subprocess
 import threading
@@ -65,15 +66,31 @@ app.add_middleware(
 )
 
 # Dictionary to store session data
-sessions = {}
+sessions: Dict[str, asyncio.Queue] = {}
+sessions["test"] = asyncio.Queue()
 
 
-@app.get('/stream_screenshot/{session_id}')
+@app.post("/receive_screenshot/{session_id}")
+async def receive_screenshot(session_id: str, file: UploadFile = File(...)):
+    if session_id not in sessions:
+        sessions[session_id] = asyncio.Queue()
+    await sessions[session_id].put(await file.read())
+    return {"message": "Screenshot received"}
+
+
+@app.get("/stream_screenshot/{session_id}")
 async def stream_screenshot(session_id: str):
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    return StreamingResponse(generate_screenshots(session_id), media_type="text/event-stream")
+    async def generate_screenshots(session_id):
+        while True:
+            if not sessions[session_id].empty():
+                screenshot = await sessions[session_id].get()
+                yield screenshot
+            await asyncio.sleep(1)  # Adjust the sleep time as needed
+
+    return StreamingResponse(generate_screenshots(session_id), media_type="image/png")
 
 
 @app.post('/terminate_session/{session_id}', response_model=TerminateSessionResponse)
