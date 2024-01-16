@@ -2,16 +2,19 @@ import asyncio
 from playwright.async_api import async_playwright
 import hashlib
 import httpx
-import time 
+import json 
+import time
+import janus
 
 class BrowserAutomation:
-    def __init__(self, session_id, command_queue):
+    def __init__(self, session_id):
         self.session_id = session_id
-        self.command_queue = command_queue
+        self.queue = janus.Queue()
         self.last_screenshot_hash = None
         self.screenshot_debounce_timer = None
         self.browser = None
         self.page = None
+        self.async_queue = asyncio.Queue()
 
     async def _take_and_send_screenshot(self):
         screenshot = await self.page.screenshot()
@@ -33,22 +36,38 @@ class BrowserAutomation:
         except asyncio.CancelledError:
             pass
     
-    def add_command(self, command):
-        asyncio.create_task(self.command_queue.put(command))
-    
+
+    # Asynchronous method to add commands to the queue
+    async def add_command_async(self, command_json):
+        await self.queue.async_q.put(command_json) 
     ### Processes Commands ###
     async def process_commands(self):
         while True:
-            command = await self.command_queue.get()
-            if command == "exit":
-                break  # Exit the loop if the command is "exit"
-            # Process other commands
-            # For example, if command is a URL, then load it
-            elif isinstance(command, str):  # Assuming command is a URL for simplicity
-                await self.page.goto(command)
-            # Add more command types and their handling logic as needed
+            command_data = await self.queue.async_q.get()
+            print(command_data)
+            try:
+                # Parse the command and its parameters from JSON
+                command_name = command_data.get("command")
+                parameters = command_data.get("parameters", {})
+
+                if command_name == "exit":
+                    await self.browser.close()
+                    return
+                elif command_name == "navigate":
+                    print("navigating")
+                # Add more commands as needed
+                # ...
+            except json.JSONDecodeError:
+                print("Invalid command format. Please use JSON format.")
+
+            await asyncio.sleep(0.1)
+
+    async def navigate(self, parameters):
+        link = parameters.get("link")
+        await self.page.goto(link)
 
     async def start(self):
+        print("Starting...")
         async with async_playwright() as p:
             self.browser = await p.chromium.launch(headless=False)
             self.page = await self.browser.new_page()
@@ -71,10 +90,27 @@ class BrowserAutomation:
         await self.browser.close()
 
 
-# # Usage
-# async def main():
-#     automation = BrowserAutomation("test")
-#     await automation.start()
-#     # The script will continue running until an "exit" command is received
+# Modify test_automation to use the new method
+async def test_automation():
+    #note: there's prob a high likelihood you are leaking memory
+    session_id = "test"  # Replace with your actual session ID
 
-# asyncio.run(main())
+    # Instantiate the BrowserAutomation object
+    automation = BrowserAutomation(session_id)
+
+    # Run the automation in a separate asyncio task
+    asyncio.create_task(automation.start())
+
+    # Add test commands to the queue as needed
+    await automation.add_command_async({"command": "navigate", "parameters": {"link": "google.com"}})  # Example command
+
+    # Wait for some time or for a specific condition
+    await asyncio.sleep(5)
+
+    print("exiting")
+    await automation.add_command_async('exit')  # Stop the automation
+
+    
+
+if __name__ == "__main__":
+    asyncio.run(test_automation())

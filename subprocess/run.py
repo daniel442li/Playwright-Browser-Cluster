@@ -10,7 +10,9 @@ def start_automation(command_queue, session_id):
         automation = BrowserAutomation(session_id, command_queue)
         await automation.start()
 
-    asyncio.run(run_automation())
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(run_automation())
 
 def main():
     command_queue = queue.Queue()
