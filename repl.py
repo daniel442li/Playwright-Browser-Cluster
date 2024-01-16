@@ -2,11 +2,15 @@ import subprocess
 import threading
 import queue
 import time
+import json
 from nlp_parser import ai_command
-def read_output(out, queue, output_done):
+def read_output(out, error, queue, output_done):
     for line in iter(out.readline, ''):
         queue.put(line)
+    for line in iter(error.readline, ''):
+        queue.put("ERROR: " + line)  # Prefixing errors for easier identification
     out.close()
+    error.close()
     output_done.set()
 
 # Path to your Python interpreter
@@ -20,7 +24,7 @@ process = subprocess.Popen([python_path, '-u', '-i', '-m', 'asyncio'],
 output_queue = queue.Queue()
 output_done = threading.Event()
 
-output_thread = threading.Thread(target=read_output, args=(process.stdout, output_queue, output_done))
+output_thread = threading.Thread(target=read_output, args=(process.stdout, process.stderr, output_queue, output_done))
 output_thread.daemon = True
 output_thread.start()
 
@@ -33,46 +37,99 @@ cookies = [{
         # You can add other properties like 'expires', 'httpOnly', etc.
     }]
 
-# initial_commands = [
-#     "from playwright.sync_api import sync_playwright",
-#     "playwright = sync_playwright().start()",
-#     "browser = playwright.chromium.launch(headless=False)",
-#     "context = browser.new_context()",
-#     "page = context.new_page()",
-#     "page.goto('https://playwright.dev/')",
-#     "context.add_cookies(" + str(cookies) + ")"
+
+#await context.add_cookies({cookies})
+
+# async def take_screenshots(page, done, interval=0.2):
+#     while not done[0]:  # Check the done flag
+#         if page.is_closed():
+#             break
+#         if not page.is_closed():
+#             screenshot_bytes = await page.screenshot(full_page=True)
+#             screenshot_base64 = base64.b64encode(screenshot_bytes).decode('utf-8')
+#             print(screenshot_base64)
+#         await asyncio.sleep(interval)
+
+# done = [False]
+# screenshot_task = asyncio.create_task(take_screenshots(page, done))
+
+initial_commands = '''
+import base64
+from playwright.async_api import async_playwright
+playwright = await async_playwright().start()
+browser = await playwright.chromium.launch(headless=False)
+context = await browser.new_context()
+page = await context.new_page()
+await page.goto('https://playwright.dev/')
+
+async def take_screenshots(page, done, interval=0.2):
+    print('take_screenshots started')
+    print('peepe2e')
+    print('peepe2asdasdase')
+
+done = [False]
+await test_output(page, done)
+
+'''.format(cookies=json.dumps(cookies))
+
+# screenshot_command = [
+#     "import base64",
+#     "async def take_screenshots(page, done, interval=0.2):",
+#     "    print('peepee')",
+#     "    while not done[0]:",  # Check the done flag
+#     "        if page.is_closed():",
+#     "            break",
+#     "        if not page.is_closed():",
+#     "            screenshot_bytes = await page.screenshot(full_page=True)",
+#     "            screenshot_base64 = base64.b64encode(screenshot_bytes).decode('utf-8')",
+#     "            print(screenshot_base64)",  # Print the base64 string to stdout
+#     "        await asyncio.sleep(interval)"
 # ]
 
-initial_commands = [
-    "from playwright.async_api import async_playwright",
-    "playwright = await async_playwright().start()",
-    "browser = await playwright.chromium.launch(headless=False)",
-    "context = await browser.new_context()",
-    "page = await context.new_page()",
-    "await page.goto('https://playwright.dev/')",
-    "await context.add_cookies(" + str(cookies) + ")"
-    ]
+screenshot_command = [
+    "async def test_output(done):",
+    "    print('Test output started')",
+    ""
+]
+
 
 
 try:
     print("Welcome to the future")
-    for command in initial_commands:
+    process.stdin.write(initial_commands + "\n")
+    process.stdin.flush()
+    
+    for command in screenshot_command:
         process.stdin.write(command + "\n")
         process.stdin.flush()
-        time.sleep(1)  # Give some time for command to execute
 
     while True:
         command = input("Enter command: ")
-        command = ai_command(command)
+        
         if command.lower() in ["exit", "quit"]:
             break
 
+        
+        received_command = ai_command(command)
+
+        commands = [
+            "done = [False]",
+            "await test_output(done)",
+          #  "screenshot_task = asyncio.create_task(take_screenshots(page, done))",
+            received_command,
+            "done[0] = True",
+            "print('peepe2e')",
+            "await screenshot_task"
+        ]
+        
         output_done.clear()
-        process.stdin.write(command + "\n")
-        process.stdin.flush()
+
+        for command in commands:
+            process.stdin.write(command + "\n")
+            process.stdin.flush()
 
         # Wait for output with a timeout
-        timeout = 1.0  # Timeout in seconds
+        timeout = 10  # Timeout in seconds
         start_time = time.time()
         while time.time() - start_time < timeout:
             while not output_queue.empty():

@@ -101,7 +101,7 @@ def convert_command(function_name, argument_string):
     if function_name == "get_current_weather":
         return f"get_current_weather(location='{argument_string['location']}', format='{argument_string['format']}')"
     elif function_name == "navigate_to":
-        return (f"page.goto('https://{argument_string['link']}')")
+        return (f"await page.goto('https://{argument_string['link']}')")
  
 
 

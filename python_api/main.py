@@ -68,6 +68,13 @@ app.add_middleware(
 sessions = {}
 
 
+@app.get('/stream_screenshot/{session_id}')
+async def stream_screenshot(session_id: str):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return StreamingResponse(generate_screenshots(session_id), media_type="text/event-stream")
+
 
 @app.post('/terminate_session/{session_id}', response_model=TerminateSessionResponse)
 async def terminate_session(session_id: str):
