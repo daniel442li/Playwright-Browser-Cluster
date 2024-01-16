@@ -81,13 +81,13 @@ tools = [
         "type": "function",
         "function": {
             "name": "navigate_to",
-            "description": "Given a user command, navigate to a web page URL. Include .com, .net, etc. Don't include https://",
+            "description": "Given a user command, navigate to a web page URL. ",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "link": {
                         "type": "string",
-                        "description": "The url of the website to navigate to",
+                        "description": "Return the working URL of the website according to your knowledge. Include .com, .net, etc. Don't include https://",
                     }
                 },
                 "required": ["link"]
@@ -101,7 +101,7 @@ def convert_command(function_name, argument_string):
     if function_name == "get_current_weather":
         return f"get_current_weather(location='{argument_string['location']}', format='{argument_string['format']}')"
     elif function_name == "navigate_to":
-        return (f"await page.goto('https://{argument_string['link']}')")
+        return {"command": "navigate", "parameters": {"link": f"https://{argument_string['link']}"}} 
  
 
 
@@ -117,6 +117,8 @@ def ai_command(command):
     messages.append(assistant_message)
     function_name = (assistant_message['tool_calls'][0]['function']['name'])
     argument_string = json.loads(assistant_message['tool_calls'][0]['function']['arguments'])
-    print(function_name)
     converted_command = convert_command(function_name, argument_string)
     return converted_command
+
+
+#print(ai_command("go to new york times"))

@@ -15,6 +15,7 @@ import time
 import asyncio
 from heartbeat import check_sessions
 from gpt_commands import ai_command
+from browser import BrowserAutomation
 load_dotenv(find_dotenv())
 
 
@@ -32,6 +33,9 @@ app = FastAPI(lifespan=lifespan)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+
+class CreateSessionRequest(BaseModel):
+    session_id: str
 
 class CreateSessionResponse(BaseModel):
     session_id: str
@@ -66,27 +70,28 @@ app.add_middleware(
 )
 
 # Dictionary to store session data
-sessions: Dict[str, asyncio.Queue] = {}
-sessions["test"] = asyncio.Queue()
+sessions: Dict[str, BrowserAutomation] = {}
+screenshots: Dict[str, asyncio.Queue] = {}
+
 
 
 @app.post("/receive_screenshot/{session_id}")
 async def receive_screenshot(session_id: str, file: UploadFile = File(...)):
     if session_id not in sessions:
-        sessions[session_id] = asyncio.Queue()
-    await sessions[session_id].put(await file.read())
+        screenshots[session_id] = asyncio.Queue()
+    await screenshots[session_id].put(await file.read())
     return {"message": "Screenshot received"}
 
 
 @app.get("/stream_screenshot/{session_id}")
 async def stream_screenshot(session_id: str):
-    if session_id not in sessions:
+    if session_id not in screenshots:
         raise HTTPException(status_code=404, detail="Session not found")
 
     async def generate_screenshots(session_id):
         while True:
-            if not sessions[session_id].empty():
-                screenshot = await sessions[session_id].get()
+            if not screenshots[session_id].empty():
+                screenshot = await screenshots[session_id].get()
                 yield screenshot
             await asyncio.sleep(1)  # Adjust the sleep time as needed
 
@@ -119,69 +124,34 @@ async def terminate_session(session_id: str):
 
 
 def initialize_browser_session(session_id):
-    python_path = "/Users/daniel-li/Code/browser-backend/venv/bin/python"
-    # process = subprocess.Popen([python_path, '-u', '-i'],
-    #                            stdin=subprocess.PIPE,
-    #                            stdout=subprocess.PIPE,
-    #                            stderr=subprocess.PIPE,
-    #                            text=True)
-    
-    process = subprocess.Popen([python_path, '-u', '-i', '-m', 'asyncio'],
-                           stdin=subprocess.PIPE,
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE,
-                           text=True)
+    # Instantiate the BrowserAutomation object
+    automation = BrowserAutomation(session_id)
 
-    output_queue = queue.Queue()
-    output_done = threading.Event()
+    # Run the startup script in a separate asyncio task
+    asyncio.create_task(automation.start())
 
-    def read_output(out, q, done_event):
-        for line in iter(out.readline, ''):
-            q.put(line)
-        out.close()
-        done_event.set()
+    # cookies = [{
+    #     'name': 'li_at',
+    #     'value': 'AQEDAStP9dYDmAa8AAABjQQs-DsAAAGNKDl8O04AtTnN10CX0bDxvPgQPWSD2YF7CIFVBbe5VfggjPe8z6rH7xcAHpi_XPSwLFhWa4BQlMy86Hw6Rlt0Dce5mc11WWGMZJpoIj_xcwTR7kFQJYYP_yI3',
+    #     'domain': 'www.linkedin.com',
+    #     'path': '/',
+    #     # You can add other properties like 'expires', 'httpOnly', etc.
+    # }]
 
-    output_thread = threading.Thread(target=read_output, args=(process.stdout, output_queue, output_done))
-    output_thread.daemon = True
-    output_thread.start()
+    # initial_commands = [
+    # "await context.add_cookies(" + str(cookies) + ")"
+    # ]
 
-    cookies = [{
-        'name': 'li_at',
-        'value': 'AQEDAStP9dYDmAa8AAABjQQs-DsAAAGNKDl8O04AtTnN10CX0bDxvPgQPWSD2YF7CIFVBbe5VfggjPe8z6rH7xcAHpi_XPSwLFhWa4BQlMy86Hw6Rlt0Dce5mc11WWGMZJpoIj_xcwTR7kFQJYYP_yI3',
-        'domain': 'www.linkedin.com',
-        'path': '/',
-        # You can add other properties like 'expires', 'httpOnly', etc.
-    }]
+    return automation
 
-    initial_commands = [
-    "from playwright.async_api import async_playwright",
-    "playwright = await async_playwright().start()",
-    "browser = await playwright.chromium.launch(headless=False)",
-    "context = await browser.new_context()",
-    "page = await context.new_page()",
-    "await page.goto('https://playwright.dev/')",
-    "await context.add_cookies(" + str(cookies) + ")"
-    ]
-
-    for command in initial_commands:
-        process.stdin.write(command + "\n")
-        process.stdin.flush()
-        time.sleep(1)  # Give some time for command to execute
-
-    # Store session data
-    sessions[session_id] = {
-        "process": process,
-        "output_thread": output_thread,
-        "output_queue": output_queue,
-        "output_done": output_done
-    }
 
 
 @app.post('/create_session', response_model=CreateSessionResponse)
-async def create_session():
-    # session_id = str(uuid.uuid4())
-    session_id = "test"
-    initialize_browser_session(session_id)
+async def create_session(create_session_request: CreateSessionRequest):
+    session_id = create_session_request.session_id
+    browser = initialize_browser_session(session_id)
+    sessions[session_id] = browser
+    screenshots[session_id] = asyncio.Queue()
     return {"session_id": session_id}
 
 
@@ -193,33 +163,15 @@ async def send_command(command_request: CommandRequest):
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Invalid session ID")
 
-    session = sessions[session_id]
-    process = session["process"]
-    output_queue = session["output_queue"]
-    output_done = session["output_done"]
+    browser = sessions[session_id]
 
-    # Clear existing output
-    while not output_queue.empty():
-        output_queue.get()
+    command = ai_command(command_text)
 
-    # Send command to subprocess
-    print(command_text)
-    processed_command = ai_command(command_text)
-    process.stdin.write(processed_command + "\n")
-    process.stdin.flush()
+    await browser.add_command_async(command)
+    
 
-    # Wait for output with a timeout
-    output = []
-    timeout = 1.0  # Adjust timeout as needed
-    start_time = time.time()
-    while time.time() - start_time < timeout:
-        while not output_queue.empty():
-            output.append(output_queue.get())
-        if output_done.is_set():
-            break
-        await asyncio.sleep(0.1)  # Non-blocking sleep
 
-    return {"status": "Command executed", "output": output}
+    return {"status": "Command executed"}
 
 
 @app.get('/get_sessions', response_model=SessionList)
