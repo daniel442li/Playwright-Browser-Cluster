@@ -41,19 +41,19 @@ class BrowserAutomation:
     # Asynchronous method to add commands to the queue
     async def add_command_async(self, command_json):
         await self.queue.async_q.put(command_json) 
+
     ### Processes Commands ###
     async def process_commands(self):
         while True:
             command_data = await self.queue.async_q.get()
+            if command_data is None:
+             break
             try:
                 # Parse the command and its parameters from JSON
                 command_name = command_data.get("command")
                 parameters = command_data.get("parameters", {})
 
-                if command_name == "exit":
-                    await self.browser.close()
-                    return
-                elif command_name == "navigate":
+                if command_name == "navigate":
                     await self.navigate(parameters)
                 # Add more commands as needed
                 # ...
@@ -85,3 +85,12 @@ class BrowserAutomation:
             # Start processing commands
             await self.process_commands()
             # Additional actions can be added here
+
+    async def close(self):
+        if self.page is not None:
+            await self.page.close()
+        if self.browser is not None:
+            await self.browser.close()
+        if self.queue is not None:
+            await self.queue.async_q.put(None)  # To stop the command processing loop
+

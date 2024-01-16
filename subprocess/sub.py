@@ -5,6 +5,7 @@ import httpx
 import json 
 import time
 import janus
+from nlp_parser import ai_command 
 
 class BrowserAutomation:
     def __init__(self, session_id):
@@ -54,7 +55,7 @@ class BrowserAutomation:
                     await self.browser.close()
                     return
                 elif command_name == "navigate":
-                    print("navigating")
+                    await self.navigate(parameters)
                 # Add more commands as needed
                 # ...
             except json.JSONDecodeError:
@@ -63,6 +64,7 @@ class BrowserAutomation:
             await asyncio.sleep(0.1)
 
     async def navigate(self, parameters):
+        print("Navigating...")
         link = parameters.get("link")
         await self.page.goto(link)
 
@@ -86,9 +88,6 @@ class BrowserAutomation:
             await self.process_commands()
             # Additional actions can be added here
 
-    async def close(self):
-        await self.browser.close()
-
 
 # Modify test_automation to use the new method
 async def test_automation():
@@ -98,15 +97,18 @@ async def test_automation():
     # Instantiate the BrowserAutomation object
     automation = BrowserAutomation(session_id)
 
-    # Run the automation in a separate asyncio task
+    # Run the startup script in a separate asyncio task
     asyncio.create_task(automation.start())
 
     # Add test commands to the queue as needed
-    await automation.add_command_async({"command": "navigate", "parameters": {"link": "google.com"}})  # Example command
+    await automation.add_command_async(ai_command("navigate to linkedin"))  # Example command
 
     # Wait for some time or for a specific condition
     await asyncio.sleep(5)
 
+    await automation.add_command_async(ai_command("navigate to spotify"))
+
+    await asyncio.sleep(10)
     print("exiting")
     await automation.add_command_async('exit')  # Stop the automation
 

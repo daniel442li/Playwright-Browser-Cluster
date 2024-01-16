@@ -50,6 +50,9 @@ class CommandResponse(BaseModel):
 class SessionList(BaseModel):
     sessions: list
 
+class TerminateSessionRequest(BaseModel):
+    session_id: str
+
 class TerminateSessionResponse(BaseModel):
     message: str
 
@@ -98,27 +101,18 @@ async def stream_screenshot(session_id: str):
     return StreamingResponse(generate_screenshots(session_id), media_type="image/png")
 
 
-@app.post('/terminate_session/{session_id}', response_model=TerminateSessionResponse)
-async def terminate_session(session_id: str):
+@app.post('/terminate_session', response_model=TerminateSessionResponse)
+async def terminate_session(terminate_session_request: TerminateSessionRequest):
+    session_id = terminate_session_request.session_id
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    session = sessions[session_id]
+    browser = sessions[session_id]
 
-    # Terminate the subprocess
-    if session["process"].poll() is None:  # Check if process is still running
-        session["process"].terminate()
-        try:
-            session["process"].wait(timeout=5)  # Wait for the process to terminate
-        except subprocess.TimeoutExpired:
-            session["process"].kill()  # Force kill if not terminated within timeout
-
-    # Join the output thread to ensure it's finished
-    if session["output_thread"].is_alive():
-        session["output_thread"].join()
-
-    # Remove the session from the dictionary
+    await browser.close()
+    
     del sessions[session_id]
+    del screenshots[session_id]
 
     return {"message": "Session terminated successfully"}
 

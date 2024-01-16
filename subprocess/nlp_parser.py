@@ -101,7 +101,7 @@ def convert_command(function_name, argument_string):
     if function_name == "get_current_weather":
         return f"get_current_weather(location='{argument_string['location']}', format='{argument_string['format']}')"
     elif function_name == "navigate_to":
-        return (f"await page.goto('https://{argument_string['link']}')")
+        return {"command": "navigate", "parameters": {"link": f"https://{argument_string['link']}"}} 
  
 
 
@@ -122,4 +122,4 @@ def ai_command(command):
     return converted_command
 
 
-ai_command("navigate to google.com")
+# print(ai_command("navigate to google.com"))
