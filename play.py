@@ -55,7 +55,7 @@ async def main():
         await page.type('#APjFqb', 'Hello, World!', delay=100)
 
         # Wait for a while to observe DOM changes
-        await asyncio.sleep(10)
+        await asyncio.sleep(100)
 
         await browser.close()
 

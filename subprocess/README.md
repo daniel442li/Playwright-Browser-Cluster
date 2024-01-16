@@ -1,0 +1,1 @@
+This subprocess controls and executes Playwright code programatically. Each Playwright instance is a playground for an agent to run. :O
