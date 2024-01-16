@@ -5,15 +5,15 @@ import httpx
 import time 
 
 class BrowserAutomation:
-    def __init__(self, session_id):
+    def __init__(self, session_id, command_queue):
         self.session_id = session_id
-        self.command_queue = asyncio.Queue()
+        self.command_queue = command_queue
         self.last_screenshot_hash = None
         self.screenshot_debounce_timer = None
         self.browser = None
         self.page = None
 
-    async def take_and_send_screenshot(self):
+    async def _take_and_send_screenshot(self):
         screenshot = await self.page.screenshot()
         current_hash = hashlib.md5(screenshot).hexdigest()
 
@@ -22,20 +22,21 @@ class BrowserAutomation:
             async with httpx.AsyncClient() as client:
                 await client.post(f"http://localhost:8000/receive_screenshot/{self.session_id}", files={"file": screenshot})
 
-    async def on_dom_change(self):
+    async def _on_dom_change(self):
         if self.screenshot_debounce_timer is not None:
             self.screenshot_debounce_timer.cancel()
 
         self.screenshot_debounce_timer = asyncio.create_task(asyncio.sleep(0.1))  # Debounce for 100 milliseconds
         try:
             await self.screenshot_debounce_timer
-            await self.take_and_send_screenshot()
+            await self._take_and_send_screenshot()
         except asyncio.CancelledError:
             pass
     
     def add_command(self, command):
         asyncio.create_task(self.command_queue.put(command))
-
+    
+    ### Processes Commands ###
     async def process_commands(self):
         while True:
             command = await self.command_queue.get()
@@ -51,7 +52,7 @@ class BrowserAutomation:
         async with async_playwright() as p:
             self.browser = await p.chromium.launch(headless=False)
             self.page = await self.browser.new_page()
-            await self.page.expose_function("onCustomDOMChange", self.on_dom_change)
+            await self.page.expose_function("onCustomDOMChange", self._on_dom_change)
 
             observe_dom_script = """
                 new MutationObserver(async () => {
@@ -70,10 +71,10 @@ class BrowserAutomation:
         await self.browser.close()
 
 
-# Usage
-async def main():
-    automation = BrowserAutomation("test")
-    await automation.start()
-    # The script will continue running until an "exit" command is received
+# # Usage
+# async def main():
+#     automation = BrowserAutomation("test")
+#     await automation.start()
+#     # The script will continue running until an "exit" command is received
 
-asyncio.run(main())
+# asyncio.run(main())
