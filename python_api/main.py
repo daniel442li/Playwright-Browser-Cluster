@@ -5,13 +5,8 @@ from pydantic import BaseModel
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv, find_dotenv
-import uuid
 from typing import Dict
 import logging
-import subprocess
-import threading
-import queue
-import time
 import asyncio
 from heartbeat import check_sessions
 from gpt_commands import ai_command

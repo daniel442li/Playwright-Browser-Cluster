@@ -3,9 +3,7 @@ from playwright.async_api import async_playwright
 import hashlib
 import httpx
 import json 
-import time
 import janus
-from gpt_commands import ai_command 
 
 class BrowserAutomation:
     def __init__(self, session_id):
