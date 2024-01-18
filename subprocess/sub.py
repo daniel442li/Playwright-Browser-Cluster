@@ -7,7 +7,63 @@ import time
 import janus
 from nlp_parser import ai_command 
 import re
+import string
 
+
+def generate_option_name(index):
+    if index < 26:
+        return string.ascii_uppercase[index]
+    else:
+        first_letter_index = (index - 26) // 26
+        second_letter_index = (index - 26) % 26
+        first_letter = string.ascii_uppercase[first_letter_index]
+        second_letter = string.ascii_uppercase[second_letter_index]
+        return f"{first_letter}{second_letter}"
+    
+
+def format_options(choices):
+    option_text = ""
+    abcd = ''
+    non_abcd = ''
+
+    multi_choice = ''
+    for multichoice_idx, choice in enumerate(choices):
+        multi_choice += f"{generate_option_name(multichoice_idx)}. {choice[1]}\n"
+        abcd += f"{generate_option_name(multichoice_idx)}, "
+
+        non_abcd = generate_option_name(multichoice_idx + 1)
+
+    multi_choice += f"{non_abcd}. None of the other options match the correct element"
+    # option_text += abcd
+    option_text += f"If none of these elements match your target element, please select {non_abcd}. None of the other options match the correct element.\n"
+
+    option_text += (multi_choice + '\n\n')
+    return option_text
+
+
+def format_choices(elements, candidate_ids):
+
+    converted_elements = [
+                    f'<{element[2]} id="{i}">'
+                    + (
+                        element[1]
+                        if len(element[1].split()) < 30
+                        else " ".join(element[1].split()[:30]) + "..."
+                    )
+                    + f"</{element[-1]}>"
+
+                    if element[2]!="select" else f'<{element[2]} id="{i}">'
+                    + (
+                        element[1]
+                    )
+                    + f"</{element[-1]}>"
+                    for i, element in enumerate(elements)
+                ]
+
+
+    choices = [[str(i), converted_elements[i]] for i in candidate_ids]
+
+    return choices
 
 def remove_extra_eol(text):
     # Replace EOL symbols
@@ -35,7 +91,7 @@ async def get_element_description(element, tag_name, role_value, type_value):
         "aria-label",
         "aria-role",
         "input-checked",
-        # "input-value",
+        "input-value",
         "label",
         "name",
         "option_selected",
@@ -221,18 +277,9 @@ async def get_element_data(element, tag_name):
 
     return [center_point, description, tag_head, box_model, selector, real_tag_name]
 
-async def get_interactive_elements_with_playwright(page):
+async def get_input_elements_with_playwright(page):
     interactive_elements_selectors = [
-        'a', 'button',
         'input',
-        'select', 'textarea', 'adc-tab', '[role="button"]', '[role="radio"]', '[role="option"]', '[role="combobox"]',
-        '[role="textbox"]',
-        '[role="listbox"]', '[role="menu"]',
-        '[type="button"]', '[type="radio"]', '[type="combobox"]', '[type="textbox"]', '[type="listbox"]',
-        '[type="menu"]',
-        '[tabindex]:not([tabindex="-1"])', '[contenteditable]:not([contenteditable="false"])',
-        '[onclick]', '[onfocus]', '[onkeydown]', '[onkeypress]', '[onkeyup]', "[checkbox]",
-        '[aria-disabled="false"],[data-link]'
     ]
 
     tasks = []
@@ -346,12 +393,38 @@ class BrowserAutomation:
                 }).observe(document, { childList: true, subtree: true });
             """
 
-            await self.page.add_init_script(observe_dom_script)
+            #await self.page.add_init_script(observe_dom_script)
             await self.page.goto("http://google.com")
 
             # Start processing commands
             await self.navigate({"link": "https://www.linkedin.com/"})
             # Additional actions can be added here
+
+            elements = await get_input_elements_with_playwright(self.page)
+            print(elements)
+
+            all_candidate_ids = range(len(elements))
+            ranked_elements = elements
+
+            all_candidate_ids_with_location = []
+            for element_id, element_detail in zip(all_candidate_ids, ranked_elements):
+                all_candidate_ids_with_location.append(
+                    (element_id, round(element_detail[0][1]), round(element_detail[0][0])))
+
+            all_candidate_ids_with_location.sort(key=lambda x: (x[1], x[2]))
+
+            all_candidate_ids = [element_id[0] for element_id in all_candidate_ids_with_location]
+
+            print(all_candidate_ids)
+
+
+            choices = format_choices(elements, all_candidate_ids)
+
+            print(choices)
+
+            choice_text = format_options(choices)
+
+            print(choice_text)
 
             await asyncio.sleep(50)
 
