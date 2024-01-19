@@ -277,4 +277,4 @@ async def get_multi_inputs(page):
 
     choice_text = format_options(choices)
 
-    return choice_text
+    return choices, choice_text

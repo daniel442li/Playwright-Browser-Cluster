@@ -7,6 +7,18 @@ import time
 import janus
 from nlp_parser import ai_command 
 from multi_choice import get_multi_inputs
+import string
+
+def get_index_from_option_name(name):
+    if len(name) == 1:
+        return string.ascii_uppercase.index(name)
+    elif len(name) == 2:
+        first_letter_index = string.ascii_uppercase.index(name[0])
+        second_letter_index = string.ascii_uppercase.index(name[1])
+        return 26 + first_letter_index * 26 + second_letter_index
+    else:
+        raise Exception("The string should be either 1 or 2 characters long")
+    
 
 class BrowserAutomation:
     def __init__(self, session_id):
@@ -58,8 +70,9 @@ class BrowserAutomation:
                     return
                 elif command_name == "navigate":
                     await self.navigate(parameters)
-                # Add more commands as needed
-                # ...
+                elif command_name == "search":
+                    await self.search(parameters)
+                
             except json.JSONDecodeError:
                 print("Invalid command format. Please use JSON format.")
 
@@ -68,6 +81,23 @@ class BrowserAutomation:
     async def navigate(self, parameters):
         link = parameters.get("link")
         await self.page.goto(link)
+
+    async def search(self, parameters): 
+        query = parameters.get("query")
+        # Assuming there's a function to find the search input element, replace with actual function if available
+        choices, multi_choice = await get_multi_inputs(self.page)
+
+        element_id = "test.py"
+        element_id = get_index_from_option_name(element_id)
+
+        #ahhhh
+        target_element = choices[element_id][1]
+        selector = target_element[-2]
+        await selector.clear(timeout=10000)
+        await selector.fill("", timeout=10000)
+        await selector.press_sequentially("hello", timeout=10000)
+
+        
 
     async def start(self):
         print("Starting...")

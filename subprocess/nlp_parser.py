@@ -62,18 +62,18 @@ tools = [
     {
         "type": "function",
         "function": {
-            "name": "type",
-            "description": "Types/searches into the page",
+            "name": "search",
+            "description": "Given the command, the user wants to utilize a search / look up input on the webpage",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "location": {
+                    "query": {
                         "type": "string",
-                        "description": "The item that they want to type into the page",
+                        "description": "The query that the user wants to search up in the search bar",
                     },
                    
                 },
-                "required": ["type"],
+                "required": ["query"],
             },
         }
     },
@@ -98,8 +98,8 @@ tools = [
 
 
 def convert_command(function_name, argument_string):
-    if function_name == "get_current_weather":
-        return f"get_current_weather(location='{argument_string['location']}', format='{argument_string['format']}')"
+    if function_name == "search":
+        return {"command": "search", "parameters": {"query": argument_string['query']}} 
     elif function_name == "navigate_to":
         return {"command": "navigate", "parameters": {"link": f"https://{argument_string['link']}"}} 
  
@@ -118,8 +118,9 @@ def ai_command(command):
     function_name = (assistant_message['tool_calls'][0]['function']['name'])
     argument_string = json.loads(assistant_message['tool_calls'][0]['function']['arguments'])
     print(function_name)
+    print(argument_string)
     converted_command = convert_command(function_name, argument_string)
     return converted_command
 
 
-# print(ai_command("navigate to google.com"))
+print(ai_command("search up lebron james"))
