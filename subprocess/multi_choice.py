@@ -228,8 +228,11 @@ async def get_element_data(element, tag_name):
 
 async def get_input_elements_with_playwright(page):
     interactive_elements_selectors = [
+        'button',
         'input',
-        'button'
+        'textarea', '[role="button"]', '[role="combobox"]',
+        '[role="textbox"]',
+        '[type="button"]', '[type="combobox"]', '[type="textbox"]'
     ]
 
     tasks = []

@@ -56,12 +56,13 @@ def convert(problem, quiz):
 problem = "Search element"
 
 quiz = '''
-If none of these elements match your target element, please select B. None of the other options match the correct element.
-A. <input type="text" id="0">aria-label="Search" name="search_query" placeholder="Search"</input>
-B. None of the other options match the correct element
+If none of these elements match your target element, please select C. None of the other options match the correct element.
+A. <input role="button" type="submit" id="0">aria-label="Google Search" name="btnK" value="Google Search"</input>
+B. <input role="button" type="submit" id="1">aria-label="I'm Feeling Lucky" name="btnI" value="I'm Feeling Lucky"</input>
+C. None of the other options match the correct element
 
 
 '''
 
 
-convert(problem, quiz)
+# convert(problem, quiz)

@@ -138,17 +138,18 @@ class BrowserAutomation:
             await self.page.goto("http://google.com")
 
             # Start processing commands
-            await self.navigate({"link": "https://www.github.com/"})
+            await self.navigate({"link": "https://www.reddit.com/"})
             # Additional actions can be added here
 
             x = time.time()
             
             elements, choices, multi_choice = await get_multi_inputs(self.page)
+            print(elements)
 
-            pattern = r"(?:selector=')(button|input)"
+            pattern = r"(?:selector=')(button|input|textarea)"
             
 
-            selection = convert("Search bar", multi_choice)
+            selection = convert("Search element", multi_choice)
             
             print(choices)
             print(multi_choice)
@@ -158,6 +159,7 @@ class BrowserAutomation:
 
             target_element = elements[int(choices[element_id][0])]
             selector = target_element[-2]
+            print(selector)
 
             type_selector = re.search(pattern, str(selector)).group(1)
             print(type_selector)
@@ -165,11 +167,11 @@ class BrowserAutomation:
             if type_selector == "input":
                 await selector.clear(timeout=10000)
                 await selector.fill("", timeout=10000)
-            elif type_selector == "button":
+            elif type_selector == "button" or type_selector == 'textarea':
                 await selector.evaluate("element => element.click()", timeout=10000)
+                print("clicked")
             elif type_selector == "No match":
                 print("No matching element type found")
-            
             await selector.press_sequentially("lebron", timeout=10000)
 
             print(time.time() - x)
