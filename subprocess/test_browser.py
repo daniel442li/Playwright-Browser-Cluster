@@ -8,6 +8,8 @@ import janus
 from nlp_parser import ai_command 
 from multi_choice import get_multi_inputs
 import string
+from selection import convert 
+
 
 def get_index_from_option_name(name):
     if len(name) == 1:
@@ -85,17 +87,20 @@ class BrowserAutomation:
     async def search(self, parameters): 
         query = parameters.get("query")
         # Assuming there's a function to find the search input element, replace with actual function if available
-        choices, multi_choice = await get_multi_inputs(self.page)
+        elements, choices, multi_choice = await get_multi_inputs(self.page)
+        selection = convert("Search bar", multi_choice)
 
-        element_id = "test.py"
-        element_id = get_index_from_option_name(element_id)
+        element_id = get_index_from_option_name(selection)
 
-        #ahhhh
-        target_element = choices[element_id][1]
-        selector = target_element[-2]
-        await selector.clear(timeout=10000)
-        await selector.fill("", timeout=10000)
-        await selector.press_sequentially("hello", timeout=10000)
+        # element_id = "test.py"
+        # element_id = get_index_from_option_name(element_id)
+
+        # #ahhhh
+        # target_element = choices[element_id][1]
+        # selector = target_element[-2]
+        # await selector.clear(timeout=10000)
+        # await selector.fill("", timeout=10000)
+        # await selector.press_sequentially("hello", timeout=10000)
 
         
 
@@ -126,14 +131,35 @@ class BrowserAutomation:
             await self.page.goto("http://google.com")
 
             # Start processing commands
-            await self.navigate({"link": "https://www.linkedin.com/"})
+            await self.navigate({"link": "https://www.youtube.com/"})
             # Additional actions can be added here
 
             x = time.time()
-            multi_choice = await get_multi_inputs(self.page)
-            print(time.time() - x)
-            print(multi_choice)
+            
+            elements, choices, multi_choice = await get_multi_inputs(self.page)
 
+            print(elements)
+
+            selection = convert("Search bar", multi_choice)
+            
+            print(choices)
+            print(multi_choice)
+            print(selection)
+            element_id = get_index_from_option_name(selection)
+            print(element_id)
+
+            target_element = elements[int(choices[element_id][0])]
+            target_element_text = choices[element_id][1]
+            selector = target_element[-2]
+
+            print(target_element)
+            print(target_element_text)
+            print(selector)
+            print(time.time() - x)
+
+            await selector.clear(timeout=10000)
+            await selector.fill("", timeout=10000)
+            await selector.press_sequentially("lebron james", timeout=10000)
             
 
             await asyncio.sleep(50)
