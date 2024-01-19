@@ -39,8 +39,8 @@ main_schema = {
 def convert(problem, quiz):
     completion = client.chat.completions.create(model="gpt-4-0613",
     messages=[
-        {"role": "system", "content": "You are imitating humans doing web navigation for a task. You will be passed a multiple choice QA of options to select and an instruction from the user. "},
-        {"role": "user", "content": "Identify the correct element based on its attributes and purpose, regardless of syntax correctness. Choose the correct answer for  " + "\n" + str(problem) + "\n" + "###" + "Multiple Choice QA: \n" + str(quiz)},
+        {"role": "system", "content": "You are an expert web navigator that imitates a human"},
+        {"role": "user", "content": "You are imitating humans doing web navigation for a task. You will be passed a multiple choice QA of options to select and an instruction from the user. Identify the correct element based on its attributes and purpose, regardless of syntax correctness. Choose the correct answer for  " + "\n" + str(problem) + "\n" + "###" + "Multiple Choice QA: \n" + str(quiz)},
     ],
     functions=[{"name": "generate_schema", "parameters": main_schema}],
     function_call={"name": "generate_schema"},
@@ -50,7 +50,7 @@ def convert(problem, quiz):
     main_json = json.loads(main_json)
     print(main_json)
 
-    # return main_json['identifier']
+    return main_json['answer']
 
 
 problem = "Search element"

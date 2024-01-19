@@ -229,6 +229,7 @@ async def get_element_data(element, tag_name):
 async def get_input_elements_with_playwright(page):
     interactive_elements_selectors = [
         'input',
+        'button'
     ]
 
     tasks = []
