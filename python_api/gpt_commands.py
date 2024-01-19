@@ -62,18 +62,18 @@ tools = [
     {
         "type": "function",
         "function": {
-            "name": "type",
-            "description": "Types/searches into the page",
+            "name": "search",
+            "description": "Given the command, the user wants to utilize a search / look up input on the webpage",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "location": {
+                    "query": {
                         "type": "string",
-                        "description": "The item that they want to type into the page",
+                        "description": "The query that the user wants to search up in the search bar",
                     },
                    
                 },
-                "required": ["type"],
+                "required": ["query"],
             },
         }
     },
@@ -81,13 +81,13 @@ tools = [
         "type": "function",
         "function": {
             "name": "navigate_to",
-            "description": "Given a user command, navigate to a web page URL. ",
+            "description": "Given a user command, navigate to a web page URL. Include .com, .net, etc. Don't include https://",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "link": {
                         "type": "string",
-                        "description": "Return the working URL of the website according to your knowledge. Include .com, .net, etc. Don't include https://",
+                        "description": "The url of the website to navigate to",
                     }
                 },
                 "required": ["link"]
@@ -98,8 +98,8 @@ tools = [
 
 
 def convert_command(function_name, argument_string):
-    if function_name == "get_current_weather":
-        return f"get_current_weather(location='{argument_string['location']}', format='{argument_string['format']}')"
+    if function_name == "search":
+        return {"command": "search", "parameters": {"query": argument_string['query']}} 
     elif function_name == "navigate_to":
         return {"command": "navigate", "parameters": {"link": f"https://{argument_string['link']}"}} 
  
@@ -117,8 +117,6 @@ def ai_command(command):
     messages.append(assistant_message)
     function_name = (assistant_message['tool_calls'][0]['function']['name'])
     argument_string = json.loads(assistant_message['tool_calls'][0]['function']['arguments'])
+
     converted_command = convert_command(function_name, argument_string)
     return converted_command
-
-
-#print(ai_command("go to new york times"))

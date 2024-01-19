@@ -158,8 +158,6 @@ async def send_command(command_request: CommandRequest):
 
     await browser.add_command_async(command)
     
-
-
     return {"status": "Command executed"}
 
 

@@ -4,6 +4,10 @@ import hashlib
 import httpx
 import json 
 import janus
+from multi_choice import get_multi_inputs
+import string
+from selection import answer_multiple_choice 
+import re
 
 class BrowserAutomation:
     def __init__(self, session_id):
@@ -14,6 +18,16 @@ class BrowserAutomation:
         self.browser = None
         self.page = None
         self.async_queue = asyncio.Queue()
+
+    async def _get_index_from_option_name(self, name):
+        if len(name) == 1:
+            return string.ascii_uppercase.index(name)
+        elif len(name) == 2:
+            first_letter_index = string.ascii_uppercase.index(name[0])
+            second_letter_index = string.ascii_uppercase.index(name[1])
+            return 26 + first_letter_index * 26 + second_letter_index
+        else:
+            raise Exception("The string should be either 1 or 2 characters long")
 
     async def _take_and_send_screenshot(self):
         screenshot = await self.page.screenshot()
@@ -51,8 +65,13 @@ class BrowserAutomation:
                 command_name = command_data.get("command")
                 parameters = command_data.get("parameters", {})
 
+                print(command_name)
+                print(parameters)
+
                 if command_name == "navigate":
                     await self.navigate(parameters)
+                elif command_name == "search":
+                    await self.search(parameters)
                 # Add more commands as needed
                 # ...
             except json.JSONDecodeError:
@@ -62,7 +81,34 @@ class BrowserAutomation:
 
     async def navigate(self, parameters):
         link = parameters.get("link")
+        
+        if '.' not in link:
+            link += '.com'
+        
         await self.page.goto(link)
+    
+    async def search(self, parameters): 
+        query = parameters.get("query")
+        elements, choices, multi_choice = await get_multi_inputs(self.page)
+
+        selection = await answer_multiple_choice("Search bar", multi_choice)
+
+        element_id = await self._get_index_from_option_name(selection)
+
+        target_element = elements[int(choices[element_id][0])]
+        selector = target_element[-2]
+
+        pattern = r"(?:selector=')(button|input|textarea)"
+        type_selector = re.search(pattern, str(selector)).group(1)
+
+        if type_selector == "input":
+            await selector.clear(timeout=10000)
+            await selector.fill("", timeout=10000)
+        elif type_selector == "button" or type_selector == 'textarea':
+            await selector.evaluate("element => element.click()", timeout=10000)
+        elif type_selector == "No match":
+            print("No matching element type found")
+        await selector.press_sequentially(query, timeout=10000)
 
     async def start(self):
         print("Starting...")
@@ -77,7 +123,8 @@ class BrowserAutomation:
                 }).observe(document, { childList: true, subtree: true });
             """
 
-            await self.page.add_init_script(observe_dom_script)
+            #Sends screenshot to the browser
+            #await self.page.add_init_script(observe_dom_script)
             await self.page.goto("http://google.com")
 
             # Start processing commands
