@@ -155,7 +155,7 @@ async def send_command(command_request: CommandRequest):
 
     browser = sessions[session_id]
 
-    command = ai_command(command_text)
+    command = ai_command(command_text.upper())
 
     await browser.add_command_async(command)
     

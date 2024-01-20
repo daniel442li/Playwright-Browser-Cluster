@@ -61,9 +61,10 @@ def pretty_print_conversation(messages):
 tools = [
     {
         "type": "function",
+        "description": "Call when you see keywords such as SEARCH, LOOK UP, FIND",
         "function": {
             "name": "search",
-            "description": "Given the command, the user wants to utilize a search / look up input on the webpage",
+            "description": "Call thsi when a user wants to utilize a search / look up input on the webpage. KEYWORDS: SEARCH, LOOK UP, FIND",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -78,9 +79,10 @@ tools = [
     },
     {
         "type": "function",
+        "description": "Call when you see keywords such as GO TO, NAVIGATE TO, VISIT, OPEN",
         "function": {
             "name": "navigate_to",
-            "description": "Given a user command, navigate to a web page URL. Include .com, .net, etc. Don't include https://",
+            "description": "Given a user command, navigate to a web page URL. Include .com, .net, etc. Don't include https://. KEYWORDS: GO TO, NAVIGATE TO, VISIT, OPEN",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -95,9 +97,10 @@ tools = [
     },
     {
         "type": "function",
+        "description": "Call when you see keywords such as CLICK, SELECT, CHOOSE, PICK",
         "function": {
             "name": "click",
-            "description": "Given the command, the user wants to click an element on the webpage",
+            "description": "Call this when the user wants to click/select an element. KEYWORDS: CLICK, SELECT, CHOOSE, PICK",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -114,17 +117,17 @@ tools = [
         "type": "function",
         "function": {
             "name": "press",
-            "description": "Given the command, the user wants to press a specified button on the keyboard",
+            "description": "Call when you see keywords such as PRESS, HIT, ENTER, TAB, SPACE, ARROW KEYS",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "button": {
+                    "key": {
                         "type": "string",
                         "description": "The button on the keyboard that the user wants to press",
                         "enum": ["Enter", "Tab", "Space", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"],
                     },
                 },
-                "required": ["button"],
+                "required": ["key"],
             },
         }
     }
@@ -153,6 +156,7 @@ def ai_command(command):
         messages, tools=tools
     )
     assistant_message = chat_response.json()["choices"][0]["message"]
+    print(assistant_message)
     messages.append(assistant_message)
     function_name = (assistant_message['tool_calls'][0]['function']['name'])
     argument_string = json.loads(assistant_message['tool_calls'][0]['function']['arguments'])
@@ -161,4 +165,3 @@ def ai_command(command):
     return converted_command
 
 
-print(ai_command("click the jobs button"))

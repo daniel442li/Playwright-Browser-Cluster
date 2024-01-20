@@ -74,6 +74,8 @@ class BrowserAutomation:
                     await self.search(parameters)
                 elif command_name == "click":
                     await self.click(parameters)
+                elif command_name == "press":
+                    await self.press(parameters)
 
             except json.JSONDecodeError:
                 print("Invalid command format. Please use JSON format.")
@@ -123,15 +125,15 @@ class BrowserAutomation:
         target_element = elements[int(choices[element_id][0])]
         selector = target_element[-2]
 
-        print(selector)
-
         await selector.evaluate("element => element.click()", timeout=10000)
 
     
     async def press(self, parameters):
-        button = parameters.get("button")
+        key = parameters.get("key")
+        print("Pressing key")
+        print(key)
 
-        await self.page.keyboard.press(button);
+        await self.page.keyboard.press(key);
 
     async def start(self):
         print("Starting...")
