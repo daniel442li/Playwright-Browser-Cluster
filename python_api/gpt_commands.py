@@ -71,7 +71,6 @@ tools = [
                         "type": "string",
                         "description": "The query that the user wants to search up in the search bar",
                     },
-                   
                 },
                 "required": ["query"],
             },
@@ -94,7 +93,43 @@ tools = [
             },
         }
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "click",
+            "description": "Given the command, the user wants to click an element on the webpage",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "selector": {
+                        "type": "string",
+                        "description": "The description of the element to click. The more specific the better.",
+                    },
+                },
+                "required": ["selector"],
+            },
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "press",
+            "description": "Given the command, the user wants to press a specified button on the keyboard",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "button": {
+                        "type": "string",
+                        "description": "The button on the keyboard that the user wants to press",
+                        "enum": ["Enter", "Tab", "Space", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"],
+                    },
+                },
+                "required": ["button"],
+            },
+        }
+    }
 ]
+
 
 
 def convert_command(function_name, argument_string):
@@ -102,6 +137,10 @@ def convert_command(function_name, argument_string):
         return {"command": "search", "parameters": {"query": argument_string['query']}} 
     elif function_name == "navigate_to":
         return {"command": "navigate", "parameters": {"link": f"https://{argument_string['link']}"}} 
+    elif function_name == "click":
+        return {"command": "click", "parameters": {"selector": argument_string['selector']}}
+    elif function_name == 'press':
+        return {"command": "press", "parameters": {"key": argument_string['key']}}
  
 
 
@@ -120,3 +159,6 @@ def ai_command(command):
 
     converted_command = convert_command(function_name, argument_string)
     return converted_command
+
+
+print(ai_command("click the jobs button"))

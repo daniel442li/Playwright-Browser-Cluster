@@ -72,8 +72,9 @@ class BrowserAutomation:
                     await self.navigate(parameters)
                 elif command_name == "search":
                     await self.search(parameters)
-                # Add more commands as needed
-                # ...
+                elif command_name == "click":
+                    await self.click(parameters)
+
             except json.JSONDecodeError:
                 print("Invalid command format. Please use JSON format.")
 
@@ -89,7 +90,7 @@ class BrowserAutomation:
     
     async def search(self, parameters): 
         query = parameters.get("query")
-        elements, choices, multi_choice = await get_multi_inputs(self.page)
+        elements, choices, multi_choice = await get_multi_inputs(self.page, "input")
 
         selection = await answer_multiple_choice("Search bar", multi_choice)
 
@@ -109,6 +110,28 @@ class BrowserAutomation:
         elif type_selector == "No match":
             print("No matching element type found")
         await selector.press_sequentially(query, timeout=10000)
+
+    
+    async def click(self, parameters):
+        selector = parameters.get("selector")
+        elements, choices, multi_choice = await get_multi_inputs(self.page)
+
+        selection = await answer_multiple_choice(selector, multi_choice)
+
+        element_id = await self._get_index_from_option_name(selection)
+
+        target_element = elements[int(choices[element_id][0])]
+        selector = target_element[-2]
+
+        print(selector)
+
+        await selector.evaluate("element => element.click()", timeout=10000)
+
+    
+    async def press(self, parameters):
+        button = parameters.get("button")
+
+        await self.page.keyboard.press(button);
 
     async def start(self):
         print("Starting...")

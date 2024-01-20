@@ -13,6 +13,7 @@ from gpt_commands import ai_command
 from browser import BrowserAutomation
 load_dotenv(find_dotenv())
 
+logging.basicConfig(level=logging.DEBUG)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

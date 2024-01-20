@@ -226,14 +226,28 @@ async def get_element_data(element, tag_name):
     return [center_point, description, tag_head, box_model, selector, real_tag_name]
 
 
-async def get_input_elements_with_playwright(page):
-    interactive_elements_selectors = [
-        'button',
+async def get_elements_with_playwright(page, type='default'):
+    if type == 'input':
+        interactive_elements_selectors = [
+            'button',
+            'input',
+            'textarea', '[role="button"]', '[role="combobox"]',
+            '[role="textbox"]',
+            '[type="button"]', '[type="combobox"]', '[type="textbox"]'
+        ]
+    else:
+        interactive_elements_selectors = [
+        'a', 'button',
         'input',
-        'textarea', '[role="button"]', '[role="combobox"]',
+        'select', 'textarea', 'adc-tab', '[role="button"]', '[role="radio"]', '[role="option"]', '[role="combobox"]',
         '[role="textbox"]',
-        '[type="button"]', '[type="combobox"]', '[type="textbox"]'
-    ]
+        '[role="listbox"]', '[role="menu"]',
+        '[type="button"]', '[type="radio"]', '[type="combobox"]', '[type="textbox"]', '[type="listbox"]',
+        '[type="menu"]',
+        '[tabindex]:not([tabindex="-1"])', '[contenteditable]:not([contenteditable="false"])',
+        '[onclick]', '[onfocus]', '[onkeydown]', '[onkeypress]', '[onkeyup]', "[checkbox]",
+        '[aria-disabled="false"],[data-link]'
+        ]
 
     tasks = []
 
@@ -262,8 +276,8 @@ async def get_input_elements_with_playwright(page):
     return interactive_elements
 
 
-async def get_multi_inputs(page):
-    elements = await get_input_elements_with_playwright(page)
+async def get_multi_inputs(page, type='default'):
+    elements = await get_elements_with_playwright(page, type)
 
     all_candidate_ids = range(len(elements))
     ranked_elements = elements

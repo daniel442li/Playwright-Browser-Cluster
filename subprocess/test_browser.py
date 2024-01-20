@@ -11,7 +11,7 @@ import string
 from selection import convert 
 import re
 
-def get_index_from_option_name(name):
+async def get_index_from_option_name(name):
     if len(name) == 1:
         return string.ascii_uppercase.index(name)
     elif len(name) == 2:
@@ -169,7 +169,6 @@ class BrowserAutomation:
                 await selector.fill("", timeout=10000)
             elif type_selector == "button" or type_selector == 'textarea':
                 await selector.evaluate("element => element.click()", timeout=10000)
-                print("clicked")
             elif type_selector == "No match":
                 print("No matching element type found")
             await selector.press_sequentially("lebron", timeout=10000)
