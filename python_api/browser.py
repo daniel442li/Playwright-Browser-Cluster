@@ -125,6 +125,8 @@ class BrowserAutomation:
         target_element = elements[int(choices[element_id][0])]
         selector = target_element[-2]
 
+        print(selector)
+
         await selector.evaluate("element => element.click()", timeout=10000)
 
     

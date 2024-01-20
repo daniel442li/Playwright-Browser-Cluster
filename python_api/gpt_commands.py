@@ -3,7 +3,7 @@ import requests
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from termcolor import colored
 
-GPT_MODEL = "gpt-3.5-turbo-0613"
+GPT_MODEL = "gpt-4-1106-preview"
 
 import os
 from dotenv import load_dotenv, find_dotenv
@@ -61,10 +61,10 @@ def pretty_print_conversation(messages):
 tools = [
     {
         "type": "function",
-        "description": "Call when you see keywords such as SEARCH, LOOK UP, FIND",
+        "description": "Call when you see keywords such as SEARCH, LOOK UP, FIND, TYPE",
         "function": {
             "name": "search",
-            "description": "Call thsi when a user wants to utilize a search / look up input on the webpage. KEYWORDS: SEARCH, LOOK UP, FIND",
+            "description": "Call thsi when a user wants to utilize a search / input on the webpage. KEYWORDS: SEARCH, LOOK UP, FIND",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -156,7 +156,6 @@ def ai_command(command):
         messages, tools=tools
     )
     assistant_message = chat_response.json()["choices"][0]["message"]
-    print(assistant_message)
     messages.append(assistant_message)
     function_name = (assistant_message['tool_calls'][0]['function']['name'])
     argument_string = json.loads(assistant_message['tool_calls'][0]['function']['arguments'])

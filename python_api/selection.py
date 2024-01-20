@@ -9,6 +9,21 @@ import json
 load_dotenv(find_dotenv())
 
 
+main_schema_reasoning = {
+    "type": "object",
+    "properties": {
+        "answer": {
+            "type": "string",
+            "description": "The answer to the multiple choice QA. Should be in format 'A', 'B', 'AC', etc'"
+        },
+        "reasoning": {
+            "type": "string",
+            "description": "Why you choose the answer you did."
+        },
+    },
+    "required": ["answer", "reasoning"],
+}
+
 main_schema = {
     "type": "object",
     "properties": {
@@ -22,6 +37,7 @@ main_schema = {
 
 
 async def answer_multiple_choice(problem, quiz):
+    print(quiz)
     completion = client.chat.completions.create(model="gpt-4-1106-preview",
     messages=[
         {"role": "system", "content": "You are an expert web navigator that imitates a human"},
@@ -33,5 +49,7 @@ async def answer_multiple_choice(problem, quiz):
 
     main_json = (completion.choices[0].message.function_call.arguments)
     main_json = json.loads(main_json)
+
+    print(main_json['answer'])
 
     return main_json['answer']
