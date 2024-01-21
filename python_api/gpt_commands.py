@@ -180,5 +180,27 @@ def ai_command(command):
     converted_command = convert_command(function_name, argument_string)
     return converted_command
 
+def test():
+    import time
+    start = time.time()
+    print(ai_command("go to google"))
+    print(time.time() - start)
 
-#print(ai_command("fill out all forms"))
+    start = time.time()
+    print(ai_command("go to google"))
+    print(time.time() - start)
+
+    start = time.time()
+    print(ai_command("go to google"))
+    print(time.time() - start)
+
+    start = time.time()
+    print(ai_command("go to google"))
+    print(time.time() - start)
+
+    start = time.time()
+    print(ai_command("go to google"))
+    print(time.time() - start)
+
+
+test()

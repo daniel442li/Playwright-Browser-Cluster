@@ -3,7 +3,7 @@ import requests
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from termcolor import colored
 
-GPT_MODEL = "gpt-3.5-turbo-0613"
+GPT_MODEL = "gpt-4-1106-preview"
 
 import os
 from dotenv import load_dotenv, find_dotenv
@@ -116,10 +116,8 @@ agent_function = {
 tools = [
     {
         "type": "function",
-        "description": "Call when you see keywords such as SEARCH, LOOK UP, FIND, TYPE",
         "function": {
             "name": "search",
-            "description": "Call this when a user wants to utilize a search / input on the webpage.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -134,9 +132,8 @@ tools = [
     },
     {
         "type": "function",
-        "description": "Call when you see keywords such as GO TO, NAVIGATE TO, VISIT, OPEN",
         "function": {
-            "name": "navigate_to",
+            "name": "navigate",
             "description": "Given a user command, navigate to a web page URL. Include .com, .net, etc. Don't include https://. KEYWORDS: GO TO, NAVIGATE TO, VISIT, OPEN",
             "parameters": {
                 "type": "object",
@@ -152,10 +149,8 @@ tools = [
     },
     {
         "type": "function",
-        "description": "Call when you see keywords such as CLICK, SELECT, CHOOSE, PICK",
         "function": {
             "name": "click",
-            "description": "Call this when the user wants to click/select an element. KEYWORDS: CLICK, SELECT, CHOOSE, PICK",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -172,7 +167,6 @@ tools = [
     "type": "function",
     "function": {
         "name": "fill_out_form",
-        "description": "Call when you see keywords such as FILL, COMPLETE, INPUT, TYPE in reference to form fields",
         "parameters": {
             "type": "object",
             "properties": {
@@ -202,17 +196,32 @@ tools = [
 ]
 
 
+def convert_command(action, command):
+    messages = []
 
-def convert_command(function_name, argument_string):
-    if function_name == "search":
+    if action == 'fill_out_form':
+        messages.append({"role": "system", "content": "Return an empty array if no forms specified"})
+
+    messages.append({"role": "user", "content": command})
+    chat_response = chat_completion_request(
+        messages, tools=tools, tool_choice={"type": "function", "function": {"name": action}}
+    )
+
+    assistant_message = chat_response.json()["choices"][0]["message"]
+    argument_string = json.loads(assistant_message['tool_calls'][0]['function']['arguments'])
+
+    if action == "search":
         return {"command": "search", "parameters": {"query": argument_string['query']}} 
-    elif function_name == "navigate_to":
-        return {"command": "navigate", "parameters": {"link": f"https://{argument_string['link']}"}} 
-    elif function_name == "click":
+    elif action == "navigate":
+        if (argument_string['link'].startswith("https://")):
+            return {"command": "navigate", "parameters": {"link": argument_string['link']}}
+        else:
+            return {"command": "navigate", "parameters": {"link": f"https://{argument_string['link']}"}} 
+    elif action == "click":
         return {"command": "click", "parameters": {"selector": argument_string['selector']}}
-    elif function_name == 'press':
+    elif action == 'press':
         return {"command": "press", "parameters": {"key": argument_string['key']}}
-    elif function_name == 'fill_out_form':
+    elif action == 'fill_out_form':
         return {"command": "fill_out_form", "parameters": {"fields": argument_string['fields']}}
  
 
@@ -230,18 +239,37 @@ def ai_command(command):
 
     assistant_message = chat_response.json()["choices"][0]["message"]
     messages.append(assistant_message)
-    function_name = (assistant_message['tool_calls'][0]['function']['name'])
 
-    print(function_name)
     argument_string = json.loads(assistant_message['tool_calls'][0]['function']['arguments'])
+    converted_command = convert_command(argument_string['action'], command)
 
-    return argument_string['action']
 
-    # converted_command = convert_command(function_name, argument_string)
+    return converted_command
+
+    
     #return converted_command
 
-import time
-start = time.time()
-print(ai_command("fill out all forms"))
-end = time.time()
-print(end - start)
+def test():
+    import time
+    start = time.time()
+    print(ai_command("go to google"))
+    print(time.time() - start)
+
+    start = time.time()
+    print(ai_command("go to google"))
+    print(time.time() - start)
+
+    start = time.time()
+    print(ai_command("go to google"))
+    print(time.time() - start)
+
+    start = time.time()
+    print(ai_command("go to google"))
+    print(time.time() - start)
+
+    start = time.time()
+    print(ai_command("go to google"))
+    print(time.time() - start)
+
+
+test()
