@@ -3,7 +3,7 @@ import requests
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from termcolor import colored
 
-GPT_MODEL = "gpt-4-1106-preview"
+GPT_MODEL = "gpt-3.5-turbo-0613"
 
 import os
 from dotenv import load_dotenv, find_dotenv
@@ -55,6 +55,61 @@ def pretty_print_conversation(messages):
             print(colored(f"assistant: {message['content']}\n", role_to_color[message["role"]]))
         elif message["role"] == "tool":
             print(colored(f"function ({message['name']}): {message['content']}\n", role_to_color[message["role"]]))
+
+
+
+system_message = """
+You are a very helpful assistant. Your job is to choose the best posible action to solve the user question or task.
+
+These are the available actions:
+- search: Call when you see keywords such as SEARCH, LOOK UP, FIND
+- navigate: Call when you see keywords such as GO TO, NAVIGATE TO, VISIT, OPEN
+- click: Call when you see keywords such as CLICK, SELECT, CHOOSE, PICK
+- press: Call this when the user wants to click/select an element. KEYWORDS: CLICK, SELECT, CHOOSE, PICK
+- fill_out_form: Call when you see keywords such as FILL, COMPLETE, INPUT, TYPE in reference to form fields
+
+"""
+
+agent_function_thought = {
+    'name': 'select_action',
+    'description': 'Selects an action',
+    'parameters': {
+        'type': 'object',
+        'properties': {
+            'thought': {
+                'type': 'string',
+                'description': 'The reasoning behind the selection of an action'
+            },
+            'action': {
+                'type': 'string',
+                'enum': ["search", "navigate", "click", "press", "fill_out_form"],
+                'description': 'Action name to accomplish a task'
+            }
+        },
+        'required': ['thought', 'action']
+    }
+}
+
+agent_function = {
+    "type": "function",
+    "function": {
+        'name': 'select_action',
+        'description': 'Selects an action',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'action': {
+                    'type': 'string',
+                    'enum': ["search", "navigate", "click", "press", "fill_out_form"],
+                    'description': 'Action name to accomplish a task'
+                },
+                
+            },
+            'required': ['action']
+            
+        }
+    }
+}
 
 
 
@@ -166,19 +221,27 @@ def convert_command(function_name, argument_string):
 
 def ai_command(command): 
     messages = []
-    messages.append({"role": "system", "content": "You are segmenting commands into functions. You will be passed a command from the user. Identify the function that the command belongs to. You must pick a command"})
-    messages.append({"role": "user", "content": "You must pick the command you think is right. \n" + "Command: \n" + "### \n" + command})
+    messages.append({"role": "system", "content": system_message})
+    messages.append({"role": "user", "content": command})
     chat_response = chat_completion_request(
-        messages, tools=tools
+        messages, tools=[agent_function], tool_choice={"type": "function", "function": {"name": "select_action"}}
     )
+    assistant_message = chat_response.json()
+
     assistant_message = chat_response.json()["choices"][0]["message"]
     messages.append(assistant_message)
-    print(assistant_message)
     function_name = (assistant_message['tool_calls'][0]['function']['name'])
+
+    print(function_name)
     argument_string = json.loads(assistant_message['tool_calls'][0]['function']['arguments'])
 
-    converted_command = convert_command(function_name, argument_string)
-    return converted_command
+    return argument_string['action']
 
+    # converted_command = convert_command(function_name, argument_string)
+    #return converted_command
 
-#print(ai_command("fill out all forms"))
+import time
+start = time.time()
+print(ai_command("fill out all forms"))
+end = time.time()
+print(end - start)

@@ -76,6 +76,8 @@ class BrowserAutomation:
                     await self.click(parameters)
                 elif command_name == "press":
                     await self.press(parameters)
+                elif command_name == "fill_out_form":
+                    await self.fill_out_form(parameters)
 
             except json.JSONDecodeError:
                 print("Invalid command format. Please use JSON format.")
@@ -136,6 +138,20 @@ class BrowserAutomation:
         print(key)
 
         await self.page.keyboard.press(key);
+    
+
+    async def fill_out_form(self, parameters):
+        fields = parameters.get("fields")
+        print("Filling out form")
+        print(fields)
+
+        if fields == []:
+            elements, choices, multi_choice = await get_multi_inputs(self.page, "input")
+            selection = await answer_multiple_choice("All inputs. Return an array of all inputs", multi_choice)
+
+            print(selection)
+
+
 
     async def start(self):
         print("Starting...")
