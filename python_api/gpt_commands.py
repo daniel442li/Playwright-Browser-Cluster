@@ -113,37 +113,57 @@ tools = [
             },
         }
     },
-{
-    "type": "function",
-    "function": {
-        "name": "fill_out_form",
-        "description": "Call when you see keywords such as FILL, COMPLETE, INPUT, TYPE in reference to form fields",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "fields": {
-                    "type": "array",
-                    "description": "An array of objects representing form fields and the values to input. If no fields specified, return an empty array.",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "form_description": {
-                                "type": "string",
-                                "description": "A description of what the input field is for"
+    {
+        "type": "function",
+        "function": {
+            "name": "fill_out_form",
+            "description": "Call when you see keywords such as FILL, COMPLETE, INPUT, TYPE in reference to form fields",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "fields": {
+                        "type": "array",
+                        "description": "An array of objects representing form fields and the values to input. If no fields specified, return an empty array.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "form_description": {
+                                    "type": "string",
+                                    "description": "A description of what the input field is for"
+                                },
+                                "value": {
+                                    "type": "string",
+                                    "description": "The value to enter into the form field"
+                                }
                             },
-                            "value": {
-                                "type": "string",
-                                "description": "The value to enter into the form field"
-                            }
-                        },
-                        "required": ["selector", "value"]
+                            "required": ["selector", "value"]
+                        }
                     }
-                }
+                },
+                "required": ["fields"],
+            }
+    },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "press",
+            "description": "Call when you see keywords such as PRESS, HIT, ENTER, TAB, SPACE, ARROW KEYS",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "button": {
+                    "key": {
+                        "type": "string",
+                        "description": "The button on the keyboard that the user wants to press",
+                        "enum": ["Enter", "Tab", "Space", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"],
+                    },
+                },
+                "required": ["key"],
             },
-            "required": ["fields"],
         }
     }
-}
+    }
 ]
 
 
@@ -180,27 +200,27 @@ def ai_command(command):
     converted_command = convert_command(function_name, argument_string)
     return converted_command
 
-def test():
-    import time
-    start = time.time()
-    print(ai_command("go to google"))
-    print(time.time() - start)
+# def test():
+#     import time
+#     start = time.time()
+#     print(ai_command("press enter"))
+#     print(time.time() - start)
 
-    start = time.time()
-    print(ai_command("go to google"))
-    print(time.time() - start)
+#     # start = time.time()
+#     # print(ai_command("go to google"))
+#     # print(time.time() - start)
 
-    start = time.time()
-    print(ai_command("go to google"))
-    print(time.time() - start)
+#     # start = time.time()
+#     # print(ai_command("go to google"))
+#     # print(time.time() - start)
 
-    start = time.time()
-    print(ai_command("go to google"))
-    print(time.time() - start)
+#     # start = time.time()
+#     # print(ai_command("go to google"))
+#     # print(time.time() - start)
 
-    start = time.time()
-    print(ai_command("go to google"))
-    print(time.time() - start)
+#     # start = time.time()
+#     # print(ai_command("go to google"))
+#     # print(time.time() - start)
 
 
-test()
+# test()

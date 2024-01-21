@@ -163,7 +163,7 @@ tools = [
             },
         }
     },
-{
+    {
     "type": "function",
     "function": {
         "name": "fill_out_form",
@@ -192,8 +192,28 @@ tools = [
             "required": ["fields"],
         }
     }
-}
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "press",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "The button on the keyboard that the user wants to press",
+                        "enum": ["Enter", "Tab", "Space", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"],
+                        
+                    },
+                },
+                "required": ["key"],
+            },
+        }
+    },
+    
 ]
+
 
 
 def convert_command(action, command):
@@ -207,6 +227,7 @@ def convert_command(action, command):
         messages, tools=tools, tool_choice={"type": "function", "function": {"name": action}}
     )
 
+    print(chat_response.json())
     assistant_message = chat_response.json()["choices"][0]["message"]
     argument_string = json.loads(assistant_message['tool_calls'][0]['function']['arguments'])
 
@@ -235,7 +256,7 @@ def ai_command(command):
     chat_response = chat_completion_request(
         messages, tools=[agent_function], tool_choice={"type": "function", "function": {"name": "select_action"}}
     )
-    assistant_message = chat_response.json()
+
 
     assistant_message = chat_response.json()["choices"][0]["message"]
     messages.append(assistant_message)
@@ -246,30 +267,28 @@ def ai_command(command):
 
     return converted_command
 
-    
-    #return converted_command
 
 def test():
     import time
     start = time.time()
-    print(ai_command("go to google"))
+    print(ai_command("press enter"))
     print(time.time() - start)
 
-    start = time.time()
-    print(ai_command("go to google"))
-    print(time.time() - start)
+    # start = time.time()
+    # print(ai_command("go to google"))
+    # print(time.time() - start)
 
-    start = time.time()
-    print(ai_command("go to google"))
-    print(time.time() - start)
+    # start = time.time()
+    # print(ai_command("go to google"))
+    # print(time.time() - start)
 
-    start = time.time()
-    print(ai_command("go to google"))
-    print(time.time() - start)
+    # start = time.time()
+    # print(ai_command("go to google"))
+    # print(time.time() - start)
 
-    start = time.time()
-    print(ai_command("go to google"))
-    print(time.time() - start)
+    # start = time.time()
+    # print(ai_command("go to google"))
+    # print(time.time() - start)
 
 
 test()
