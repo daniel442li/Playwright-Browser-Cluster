@@ -94,20 +94,20 @@ def answer_multiple_choice_forms(problem, quiz):
 
     return main_json['answer']
 
-# quiz = '''
-# If none of these elements match your target element, please select J. None of the other options match the correct element.
-# A. <input id="1">parent_node: Company Name name="pMHaI"</input>
-# B. <input id="2">parent_node: Last Name name="qnqsL"</input>
-# C. <input id="3">parent_node: Email name="zgJEL"</input>
-# D. <input id="4">parent_node: Address name="MXvfE"</input>
-# E. <input id="5">parent_node: Phone Number name="vl50G"</input>
-# F. <input id="6">parent_node: First Name name="NxoG9"</input>
-# G. <input id="7">parent_node: Role in Company name="nbPiz"</input>
-# H. <input type="submit" id="8">parent_node: Company Name value="Submit"</input>
-# I. <button id="0">Round 1</button>
-# J. None of the other options match the correct element
+quiz = '''
+If none of these elements match your target element, please select J. None of the other options match the correct element.
+A. <input id="1">parent_node: Company Name name="pMHaI"</input>
+B. <input id="2">parent_node: Last Name name="qnqsL"</input>
+C. <input id="3">parent_node: Email name="zgJEL"</input>
+D. <input id="4">parent_node: Address name="MXvfE"</input>
+E. <input id="5">parent_node: Phone Number name="vl50G"</input>
+F. <input id="6">parent_node: First Name name="NxoG9"</input>
+G. <input id="7">parent_node: Role in Company name="nbPiz"</input>
+H. <input type="submit" id="8">parent_node: Company Name value="Submit"</input>
+I. <button id="0">Round 1</button>
+J. None of the other options match the correct element
 
-# '''
+'''
 
 
-# answer_multiple_choice_forms("All form elements", quiz)
+answer_multiple_choice_forms("All form elements", quiz)

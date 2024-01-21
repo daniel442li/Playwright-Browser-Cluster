@@ -7,6 +7,7 @@ import janus
 from multi_choice import get_multi_inputs
 import string
 from selection import answer_multiple_choice 
+from selection import answer_multiple_choice_forms
 import re
 
 class BrowserAutomation:
@@ -147,7 +148,14 @@ class BrowserAutomation:
 
         if fields == []:
             elements, choices, multi_choice = await get_multi_inputs(self.page, "input")
-            selection = await answer_multiple_choice("All inputs. Return an array of all inputs", multi_choice)
+            selection = await answer_multiple_choice_forms("All form elements", multi_choice)
+
+            for input['answer'] in selection:
+                element_id = await self._get_index_from_option_name(input)
+                target_element = elements[int(choices[element_id][0])]
+                selector = target_element[-2]
+                await selector.clear(timeout=10000)
+                await selector.fill("Filler", timeout=10000)
 
             print(selection)
 
