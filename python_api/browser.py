@@ -10,6 +10,7 @@ from selection import answer_multiple_choice
 from selection import answer_multiple_choice_forms
 import re
 from playwright_stealth import stealth_async
+import time
 
 class BrowserAutomation:
     def __init__(self, session_id):
@@ -55,7 +56,9 @@ class BrowserAutomation:
 
     # Asynchronous method to add commands to the queue
     async def add_command_async(self, command_json):
-        await self.queue.async_q.put(command_json) 
+        future = asyncio.Future()
+        await self.queue.async_q.put((command_json, future))
+        return future
 
     ### Processes Commands ###
     async def process_commands(self):
@@ -63,16 +66,16 @@ class BrowserAutomation:
             command_data = await self.queue.async_q.get()
             if command_data is None:
              break
+
+            command_json, future = command_data  
+
             try:
                 # Parse the command and its parameters from JSON
-                command_name = command_data.get("command")
-                parameters = command_data.get("parameters", {})
-
-                print(command_name)
-                print(parameters)
+                command_name = command_json.get("command")
+                parameters = command_json.get("parameters", {})
 
                 if command_name == "navigate":
-                    await self.navigate(parameters)
+                    command_future = await self.navigate(parameters)
                 elif command_name == "search":
                     await self.search(parameters)
                 elif command_name == "click":
@@ -82,18 +85,35 @@ class BrowserAutomation:
                 elif command_name == "fill_out_form":
                     await self.fill_out_form(parameters)
 
+                try:
+                    result = await command_future
+                    future.set_result(result)
+                except Exception as e:
+                    print(f"Error executing command {command_name}: {str(e)}")
+
             except json.JSONDecodeError:
                 print("Invalid command format. Please use JSON format.")
 
             await asyncio.sleep(0.1)
 
     async def navigate(self, parameters):
-        link = parameters.get("link")
-        
-        if '.' not in link:
-            link += '.com'
-        
-        await self.page.goto(link)
+        future = asyncio.Future()
+
+        async def load_page():
+            try:
+                link = parameters.get("link")
+                if '.' not in link:
+                    link += '.com'
+                await self.page.goto(link, wait_until="domcontentloaded")
+                future.set_result("Navigation successful")
+            except Exception as e:
+                future.set_exception(e)
+
+        # Schedule the page loading in the background
+        asyncio.create_task(load_page())
+
+        # Return the future immediately
+        return future
     
     async def search(self, parameters): 
         query = parameters.get("query")

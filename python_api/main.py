@@ -146,6 +146,9 @@ def initialize_browser_session(session_id):
 @app.post('/create_session', response_model=CreateSessionResponse)
 async def create_session(create_session_request: CreateSessionRequest):
     session_id = create_session_request.session_id
+
+    if session_id in sessions:
+        raise HTTPException(status_code=409, detail="Session ID already exists")
     browser = initialize_browser_session(session_id)
     sessions[session_id] = browser
     screenshots[session_id] = asyncio.Queue()
@@ -164,9 +167,24 @@ async def send_command(command_request: CommandRequest):
 
     command = ai_command(command_text.upper())
 
-    await browser.add_command_async(command)
-    
-    return {"status": "Command executed"}
+    try:
+        # Add the command to the browser session and get the future
+        future = await browser.add_command_async(command)
+
+        print("HI")
+
+        # Await the future to get the result of the command
+        result = await future
+
+        print("RIP")
+
+        # Return the result in the response
+        return {"status": "Command executed", "result": result}
+
+    except Exception as e:
+        # Handle exceptions (e.g., command failures, timeouts)
+        return {"status": "Error", "message": str(e)}
+
 
 
 @app.get('/session_exists/{session_id}', response_model=SessionExistsResponse)
