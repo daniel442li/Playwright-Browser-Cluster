@@ -9,6 +9,7 @@ import string
 from selection import answer_multiple_choice 
 from selection import answer_multiple_choice_forms
 import re
+from playwright_stealth import stealth_async
 
 class BrowserAutomation:
     def __init__(self, session_id):
@@ -19,6 +20,7 @@ class BrowserAutomation:
         self.browser = None
         self.page = None
         self.async_queue = asyncio.Queue()
+        self.command_list = [{}]
 
     async def _get_index_from_option_name(self, name):
         if len(name) == 1:
@@ -166,6 +168,8 @@ class BrowserAutomation:
         async with async_playwright() as p:
             self.browser = await p.chromium.launch(headless=False)
             self.page = await self.browser.new_page()
+
+            await stealth_async(self.page)
             await self.page.expose_function("onCustomDOMChange", self._on_dom_change)
 
             observe_dom_script = """

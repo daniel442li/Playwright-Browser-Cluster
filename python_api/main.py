@@ -52,6 +52,12 @@ class TerminateSessionRequest(BaseModel):
 class TerminateSessionResponse(BaseModel):
     message: str
 
+class SessionExistsRequest(BaseModel):
+    session_id: str
+
+class SessionExistsResponse(BaseModel):
+    exists: bool
+
 # Allow CORS
 origins = [
     "http://localhost:3000",  # React app
@@ -136,6 +142,7 @@ def initialize_browser_session(session_id):
 
 
 
+
 @app.post('/create_session', response_model=CreateSessionResponse)
 async def create_session(create_session_request: CreateSessionRequest):
     session_id = create_session_request.session_id
@@ -162,9 +169,9 @@ async def send_command(command_request: CommandRequest):
     return {"status": "Command executed"}
 
 
-@app.get('/get_sessions', response_model=SessionList)
-async def get_sessions():
-    return {"sessions": list(sessions.keys())}
+@app.get('/session_exists/{session_id}', response_model=SessionExistsResponse)
+async def session_exists(session_id: str):
+    return {"exists": session_id in sessions}
 
 
 
