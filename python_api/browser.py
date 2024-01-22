@@ -59,6 +59,10 @@ class BrowserAutomation:
         future = asyncio.Future()
         await self.queue.async_q.put((command_json, future))
         return future
+    
+    async def add_cache_command_async(self, command_json):
+        await self.queue.async_q.put((command_json, None))
+
 
     ### Processes Commands ###
     async def process_commands(self):
@@ -68,6 +72,8 @@ class BrowserAutomation:
              break
 
             command_json, future = command_data  
+
+            print(command_json)
 
             try:
                 # Parse the command and its parameters from JSON
@@ -106,7 +112,9 @@ class BrowserAutomation:
                     link += '.com'
                     
                 await self.page.goto(link)
-                future.set_result("Navigation successful")
+
+                cached_command = {'command': 'navigate_cache', 'parameters': {'link': link}}
+                future.set_result(str(cached_command))
                 
             except Exception as e:
                 future.set_exception(e)
@@ -116,6 +124,13 @@ class BrowserAutomation:
 
         # Return the future immediately
         return future
+    
+    async def navigate_cache(self, parameters):
+        link = parameters.get("link")
+        if '.' not in link:
+            link += '.com'
+        await self.page.goto(link)
+
     
     async def search(self, parameters):
         future = asyncio.Future()

@@ -185,6 +185,28 @@ async def send_command(command_request: CommandRequest):
         return {"status": "Error", "message": str(e)}
 
 
+@app.post('/send_cached_command', response_model=CommandResponse)
+async def send_cached_command(command_request: CommandRequest):
+    session_id = command_request.session_id
+    command_text = command_request.command
+
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Invalid session ID")
+
+    browser = sessions[session_id]
+
+
+    try:
+        # Add the command to the browser session and get the future
+        await browser.add_command_async(command_text)
+
+        # Return the result in the response
+        return {"status": "Cached command executed"}
+
+    except Exception as e:
+        # Handle exceptions (e.g., command failures, timeouts)
+        return {"status": "Error", "message": str(e)}
+
 
 @app.get('/session_exists/{session_id}', response_model=SessionExistsResponse)
 async def session_exists(session_id: str):

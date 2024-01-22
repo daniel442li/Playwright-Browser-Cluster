@@ -264,6 +264,8 @@ def ai_command(command):
     argument_string = json.loads(assistant_message['tool_calls'][0]['function']['arguments'])
     converted_command = convert_command(argument_string['action'], command)
 
+    converted_command['cached'] = 'False'
+
 
     return converted_command
 
