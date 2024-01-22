@@ -77,13 +77,13 @@ class BrowserAutomation:
                 if command_name == "navigate":
                     command_future = await self.navigate(parameters)
                 elif command_name == "search":
-                    await self.search(parameters)
+                    command_future = await self.search(parameters)
                 elif command_name == "click":
-                    await self.click(parameters)
+                    command_future = await self.click(parameters)
                 elif command_name == "press":
-                    await self.press(parameters)
+                    command_future = await self.press(parameters)
                 elif command_name == "fill_out_form":
-                    await self.fill_out_form(parameters)
+                    command_future = await self.fill_out_form(parameters)
 
                 try:
                     result = await command_future
@@ -104,8 +104,10 @@ class BrowserAutomation:
                 link = parameters.get("link")
                 if '.' not in link:
                     link += '.com'
-                await self.page.goto(link, wait_until="domcontentloaded")
+                    
+                await self.page.goto(link)
                 future.set_result("Navigation successful")
+                
             except Exception as e:
                 future.set_exception(e)
 
@@ -115,52 +117,91 @@ class BrowserAutomation:
         # Return the future immediately
         return future
     
-    async def search(self, parameters): 
-        query = parameters.get("query")
-        elements, choices, multi_choice = await get_multi_inputs(self.page, "input")
+    async def search(self, parameters):
+        future = asyncio.Future()
 
-        selection = await answer_multiple_choice("Search bar", multi_choice)
+        async def perform_search():
+            try:
+                query = parameters.get("query")
+                elements, choices, multi_choice = await get_multi_inputs(self.page, "input")
 
-        element_id = await self._get_index_from_option_name(selection)
+                selection = await answer_multiple_choice("Search bar", multi_choice)
 
-        target_element = elements[int(choices[element_id][0])]
-        selector = target_element[-2]
+                element_id = await self._get_index_from_option_name(selection)
 
-        pattern = r"(?:selector=')(button|input|textarea)"
-        type_selector = re.search(pattern, str(selector)).group(1)
+                target_element = elements[int(choices[element_id][0])]
+                selector = target_element[-2]
 
-        if type_selector == "input":
-            await selector.clear(timeout=10000)
-            await selector.fill("", timeout=10000)
-        elif type_selector == "button" or type_selector == 'textarea':
-            await selector.evaluate("element => element.click()", timeout=10000)
-        elif type_selector == "No match":
-            print("No matching element type found")
-        await selector.press_sequentially(query, timeout=10000)
+                pattern = r"(?:selector=')(button|input|textarea)"
+                type_selector = re.search(pattern, str(selector)).group(1)
+
+                if type_selector == "input":
+                    print("here")
+                    await selector.clear(timeout=10000)
+                elif type_selector == "button" or type_selector == 'textarea':
+                    await selector.evaluate("element => element.click()", timeout=10000)
+                    await selector.press_sequentially(query, timeout=10000)
+                elif type_selector == "No match":
+                    raise Exception("No matching element type found")
+
+                await selector.press_sequentially(query, timeout=10000)
+                
+
+                
+                future.set_result("Search successful")
+            except Exception as e:
+                future.set_exception(e)
+
+        # Schedule the search operation in the background
+        asyncio.create_task(perform_search())
+
+        # Return the future immediately
+        return future
 
     
     async def click(self, parameters):
-        selector = parameters.get("selector")
-        elements, choices, multi_choice = await get_multi_inputs(self.page)
+        future = asyncio.Future()
 
-        selection = await answer_multiple_choice(selector, multi_choice)
+        async def perform_click():
+            try:
+                selector = parameters.get("selector")
+                elements, choices, multi_choice = await get_multi_inputs(self.page)
 
-        element_id = await self._get_index_from_option_name(selection)
+                selection = await answer_multiple_choice(selector, multi_choice)
 
-        target_element = elements[int(choices[element_id][0])]
-        selector = target_element[-2]
+                element_id = await self._get_index_from_option_name(selection)
 
-        print(selector)
+                target_element = elements[int(choices[element_id][0])]
+                selector = target_element[-2]
 
-        await selector.evaluate("element => element.click()", timeout=10000)
+                await selector.evaluate("element => element.click()", timeout=10000)
+                future.set_result("Click successful")
+            except Exception as e:
+                future.set_exception(e)
+
+        # Schedule the click operation in the background
+        asyncio.create_task(perform_click())
+
+        # Return the future immediately
+        return future
 
     
     async def press(self, parameters):
-        key = parameters.get("key")
-        print("Pressing key")
-        print(key)
+        future = asyncio.Future()
 
-        await self.page.keyboard.press(key);
+        async def perform_press():
+            try:
+                key = parameters.get("key")
+                await self.page.keyboard.press(key)
+                future.set_result("Key press successful")
+            except Exception as e:
+                future.set_exception(e)
+
+        # Schedule the key press operation in the background
+        asyncio.create_task(perform_press())
+
+        # Return the future immediately
+        return future
     
 
     async def fill_out_form(self, parameters):

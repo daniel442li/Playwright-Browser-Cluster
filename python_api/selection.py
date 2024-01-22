@@ -8,6 +8,7 @@ import json
 
 load_dotenv(find_dotenv())
 
+model = "gpt-4-1106-preview"
 
 main_schema_reasoning = {
     "type": "object",
@@ -59,12 +60,12 @@ answer_all = {
 
 async def answer_multiple_choice(problem, quiz):
     print(quiz)
-    completion = client.chat.completions.create(model="gpt-4-1106-preview",
+    completion = client.chat.completions.create(model=model,
     messages=[
         {"role": "system", "content": "You are an expert web navigator that imitates a human"},
         {"role": "user", "content": "You are imitating humans doing web navigation for a task. You will be passed a multiple choice QA of options to select and an instruction from the user. Identify the correct element based on its attributes and purpose, regardless of syntax correctness. Choose the correct answer for  " + "\n" + str(problem) + "\n" + "###" + "Multiple Choice QA: \n" + str(quiz)},
     ],
-    functions=[{"name": "answer_multiple_choice", "parameters": main_schema}],
+    functions=[{"name": "answer_multiple_choice", "parameters": main_schema_reasoning}],
     function_call={"name": "answer_multiple_choice"},
     temperature=0)
 
@@ -78,7 +79,7 @@ async def answer_multiple_choice(problem, quiz):
 
 def answer_multiple_choice_forms(problem, quiz):
     print(quiz)
-    completion = client.chat.completions.create(model="gpt-4-1106-preview",
+    completion = client.chat.completions.create(model=model,
     messages=[
         {"role": "system", "content": "You are an expert web navigator that imitates a human"},
         {"role": "user", "content": "You are imitating humans doing web navigation for a task. You will be passed a multiple choice QA of options to select and an instruction from the user. Identify the correct elements of inputs that coorespond to a form based on its attributes and purpose, regardless of syntax correctness. Choose the correct answer for  " + "\n" + str(problem) + "\n" + "###" + "Multiple Choice QA: \n" + str(quiz)},
@@ -90,7 +91,7 @@ def answer_multiple_choice_forms(problem, quiz):
     main_json = (completion.choices[0].message.function_call.arguments)
     main_json = json.loads(main_json)
 
-    print(main_json)
+    #print(main_json)
 
     return main_json['answer']
 

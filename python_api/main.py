@@ -42,6 +42,7 @@ class CommandRequest(BaseModel):
 
 class CommandResponse(BaseModel):
     status: str
+    action: str
 
 class SessionList(BaseModel):
     sessions: list
@@ -171,15 +172,13 @@ async def send_command(command_request: CommandRequest):
         # Add the command to the browser session and get the future
         future = await browser.add_command_async(command)
 
-        print("HI")
-
         # Await the future to get the result of the command
         result = await future
 
-        print("RIP")
+        print(result)
 
         # Return the result in the response
-        return {"status": "Command executed", "result": result}
+        return {"status": "Command executed", "action": result}
 
     except Exception as e:
         # Handle exceptions (e.g., command failures, timeouts)
