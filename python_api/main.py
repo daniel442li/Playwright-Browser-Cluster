@@ -220,6 +220,9 @@ async def send_cached_command(command_request: CacheRequest):
     try:
         if command_text == "navigate_cache":
             await browser.navigate_cache(parameters[0])
+        if command_text == "click_cache":
+            await browser.click_cache(parameters[0], parameters[1])
+
         
 
 

@@ -132,6 +132,16 @@ class BrowserAutomation:
         if '.' not in link:
             link += '.com'
         await self.page.goto(link)
+    
+    async def click_cache(self, frame, selector):
+        my_frame = self.page.frame(url=frame)
+        if my_frame:
+            new_locator = my_frame.locator(selector)
+        else:
+            new_locator = self.page.locator(selector)
+        
+        await new_locator.evaluate("element => element.click()", timeout=10000)
+
 
     
     async def search(self, parameters):
@@ -164,8 +174,8 @@ class BrowserAutomation:
                 await selector.press_sequentially(query, timeout=10000)
                 
 
-                
-                future.set_result("Search successful")
+                cached_command = {"command": "search_cache", "parameters": [query, selector, type_selector]}
+                future.set_result(json.dumps(cached_command))
             except Exception as e:
                 future.set_exception(e)
 
@@ -191,8 +201,20 @@ class BrowserAutomation:
                 target_element = elements[int(choices[element_id][0])]
                 selector = target_element[-2]
 
+
                 await selector.evaluate("element => element.click()", timeout=10000)
-                future.set_result("Click successful")
+
+                frame_url_pattern = r"url='(.*?)'"
+                frame_url_match = re.search(frame_url_pattern, str(selector))
+                frame_url = frame_url_match.group(1) if frame_url_match else None
+
+                # Pattern for extracting the selector
+                selector_pattern = r"selector='(.*?)'"
+                selector_match = re.search(selector_pattern, str(selector))
+                selector = selector_match.group(1) if selector_match else None
+                
+                cached_command = {"command": "click_cache", "parameters": [frame_url, selector]}
+                future.set_result(json.dumps(cached_command))
             except Exception as e:
                 future.set_exception(e)
 
@@ -210,7 +232,8 @@ class BrowserAutomation:
             try:
                 key = parameters.get("key")
                 await self.page.keyboard.press(key)
-                future.set_result("Key press successful")
+                cached_command = {"command": "press_cache", "parameters": [key]}
+                future.set_result(json.dumps(cached_command))
             except Exception as e:
                 future.set_exception(e)
 

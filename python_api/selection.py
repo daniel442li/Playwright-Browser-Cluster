@@ -91,7 +91,7 @@ def answer_multiple_choice_forms(problem, quiz):
     main_json = (completion.choices[0].message.function_call.arguments)
     main_json = json.loads(main_json)
 
-    #print(main_json)
+    print(main_json)
 
     return main_json['answer']
 
