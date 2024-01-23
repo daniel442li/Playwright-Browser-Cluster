@@ -141,6 +141,25 @@ class BrowserAutomation:
             new_locator = self.page.locator(selector)
         
         await new_locator.evaluate("element => element.click()", timeout=10000)
+    
+    async def press_cache(self, key):
+        await self.page.keyboard.press(key)
+    
+    async def search_cache(self, query, frame, selector, type_selector):
+        my_frame = self.page.frame(url=frame)
+        if my_frame:
+            new_locator = my_frame.locator(selector)
+        else:
+            new_locator = self.page.locator(selector)
+        
+        if type_selector == "input":
+            await new_locator.clear(timeout=10000)
+        elif type_selector == "button" or type_selector == 'textarea':
+            await new_locator.evaluate("element => element.click()", timeout=10000)
+        elif type_selector == "No match":
+            raise Exception("No matching element type found")
+
+        await new_locator.press_sequentially(query, timeout=10000)
 
 
     
@@ -167,14 +186,22 @@ class BrowserAutomation:
                     await selector.clear(timeout=10000)
                 elif type_selector == "button" or type_selector == 'textarea':
                     await selector.evaluate("element => element.click()", timeout=10000)
-                    await selector.press_sequentially(query, timeout=10000)
                 elif type_selector == "No match":
                     raise Exception("No matching element type found")
 
                 await selector.press_sequentially(query, timeout=10000)
+
+                frame_url_pattern = r"url='(.*?)'"
+                frame_url_match = re.search(frame_url_pattern, str(selector))
+                frame_url = frame_url_match.group(1) if frame_url_match else None
+
+                # Pattern for extracting the selector
+                selector_pattern = r"selector='(.*?)'"
+                selector_match = re.search(selector_pattern, str(selector))
+                selector = selector_match.group(1) if selector_match else None
                 
 
-                cached_command = {"command": "search_cache", "parameters": [query, selector, type_selector]}
+                cached_command = {"command": "search_cache", "parameters": [query, frame_url, selector, type_selector]}
                 future.set_result(json.dumps(cached_command))
             except Exception as e:
                 future.set_exception(e)
