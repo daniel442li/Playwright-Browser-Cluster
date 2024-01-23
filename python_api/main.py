@@ -11,6 +11,8 @@ import asyncio
 from heartbeat import check_sessions
 from gpt_commands_new import ai_command
 from browser import BrowserAutomation
+import json
+
 load_dotenv(find_dotenv())
 
 logging.basicConfig(level=logging.DEBUG)
@@ -43,6 +45,15 @@ class CommandRequest(BaseModel):
 class CommandResponse(BaseModel):
     status: str
     action: str
+    parameters: list
+
+
+class CacheRequest(BaseModel):
+    session_id: str
+    command: str
+    parameters: list
+
+
 
 class SessionList(BaseModel):
     sessions: list
@@ -175,30 +186,42 @@ async def send_command(command_request: CommandRequest):
         # Await the future to get the result of the command
         result = await future
 
-        print(result)
+        result = json.loads(result)
+
+        action = result.get("command")
+        parameters = result.get("parameters", [])
+
+
 
         # Return the result in the response
-        return {"status": "Command executed", "action": result}
+        return {"status": "Command executed", "action": action, "parameters": parameters}
 
     except Exception as e:
         # Handle exceptions (e.g., command failures, timeouts)
         return {"status": "Error", "message": str(e)}
 
 
-@app.post('/send_cached_command', response_model=CommandResponse)
-async def send_cached_command(command_request: CommandRequest):
+@app.post('/send_cached_command')
+async def send_cached_command(command_request: CacheRequest):
     session_id = command_request.session_id
     command_text = command_request.command
+    parameters = command_request.parameters
 
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Invalid session ID")
 
     browser = sessions[session_id]
 
+    print(command_text)
+    print(parameters)
+    
+    
 
     try:
-        # Add the command to the browser session and get the future
-        await browser.add_command_async(command_text)
+        if command_text == "navigate_cache":
+            await browser.navigate_cache(parameters[0])
+        
+
 
         # Return the result in the response
         return {"status": "Cached command executed"}

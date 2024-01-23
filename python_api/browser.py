@@ -80,22 +80,25 @@ class BrowserAutomation:
                 command_name = command_json.get("command")
                 parameters = command_json.get("parameters", {})
 
-                if command_name == "navigate":
-                    command_future = await self.navigate(parameters)
-                elif command_name == "search":
-                    command_future = await self.search(parameters)
-                elif command_name == "click":
-                    command_future = await self.click(parameters)
-                elif command_name == "press":
-                    command_future = await self.press(parameters)
-                elif command_name == "fill_out_form":
-                    command_future = await self.fill_out_form(parameters)
+                if future is None:
+                    print(command_name)
+                else:
+                    if command_name == "navigate":
+                        command_future = await self.navigate(parameters)
+                    elif command_name == "search":
+                        command_future = await self.search(parameters)
+                    elif command_name == "click":
+                        command_future = await self.click(parameters)
+                    elif command_name == "press":
+                        command_future = await self.press(parameters)
+                    elif command_name == "fill_out_form":
+                        command_future = await self.fill_out_form(parameters)
 
-                try:
-                    result = await command_future
-                    future.set_result(result)
-                except Exception as e:
-                    print(f"Error executing command {command_name}: {str(e)}")
+                    try:
+                        result = await command_future
+                        future.set_result(result)
+                    except Exception as e:
+                        print(f"Error executing command {command_name}: {str(e)}")
 
             except json.JSONDecodeError:
                 print("Invalid command format. Please use JSON format.")
@@ -113,8 +116,8 @@ class BrowserAutomation:
                     
                 await self.page.goto(link)
 
-                cached_command = {'command': 'navigate_cache', 'parameters': {'link': link}}
-                future.set_result(str(cached_command))
+                cached_command = {"command": "navigate_cache", "parameters": [link]}
+                future.set_result(json.dumps(cached_command))
                 
             except Exception as e:
                 future.set_exception(e)
@@ -125,8 +128,7 @@ class BrowserAutomation:
         # Return the future immediately
         return future
     
-    async def navigate_cache(self, parameters):
-        link = parameters.get("link")
+    async def navigate_cache(self, link):
         if '.' not in link:
             link += '.com'
         await self.page.goto(link)
