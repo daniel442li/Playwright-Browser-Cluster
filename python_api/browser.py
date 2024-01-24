@@ -137,6 +137,22 @@ class BrowserAutomation:
 
         await new_locator.press_sequentially(query, timeout=10000)
 
+    async def fill_out_form_cache(self, parameters):
+        print("HI")
+        for input in parameters:
+            frame = input[0]
+            selector = input[1]
+            answer = input[2]
+
+            my_frame = self.page.frame(url=frame)
+            if my_frame:
+                new_locator = my_frame.locator(selector)
+            else:
+                new_locator = self.page.locator(selector)
+
+            await new_locator.clear(timeout=10000)
+            await new_locator.fill(answer, timeout=10000)
+
     async def search(self, parameters):
         future = asyncio.Future()
 

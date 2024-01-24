@@ -238,7 +238,7 @@ async def send_cached_command(command_request: CacheRequest):
                 parameters[0], parameters[1], parameters[2], parameters[3]
             )
         if command_text == "fill_out_form_cache":
-            await browser.fill_out_form_cache(parameters[0], parameters[1])
+            await browser.fill_out_form_cache(parameters)
 
         # Return the result in the response
         return {"status": "Cached command executed"}
