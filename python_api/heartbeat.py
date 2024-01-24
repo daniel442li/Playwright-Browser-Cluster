@@ -3,15 +3,19 @@ import logging
 
 # This logger will inherit the configuration from the main file
 logger = logging.getLogger(__name__)
+
+
 # Function to check if a session is active (example implementation)
 def is_session_active(session, session_id):
     # Implement your check here
     return True
 
+
 # Function to clean up a session
 def cleanup_session(sessions, session_id):
     # Implement your cleanup logic here
     pass
+
 
 # Function to periodically check all sessions
 async def check_sessions(sessions):

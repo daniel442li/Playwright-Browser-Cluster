@@ -17,6 +17,7 @@ load_dotenv(find_dotenv())
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Before API starts
@@ -28,19 +29,24 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # Step 2: Setup the logging configuration
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
 class CreateSessionRequest(BaseModel):
     session_id: str
 
+
 class CreateSessionResponse(BaseModel):
     session_id: str
+
 
 class CommandRequest(BaseModel):
     session_id: str
     command: str
+
 
 class CommandResponse(BaseModel):
     status: str
@@ -54,21 +60,25 @@ class CacheRequest(BaseModel):
     parameters: list
 
 
-
 class SessionList(BaseModel):
     sessions: list
+
 
 class TerminateSessionRequest(BaseModel):
     session_id: str
 
+
 class TerminateSessionResponse(BaseModel):
     message: str
+
 
 class SessionExistsRequest(BaseModel):
     session_id: str
 
+
 class SessionExistsResponse(BaseModel):
     exists: bool
+
 
 # Allow CORS
 origins = [
@@ -89,7 +99,6 @@ app.add_middleware(
 # Dictionary to store session data
 sessions: Dict[str, BrowserAutomation] = {}
 screenshots: Dict[str, asyncio.Queue] = {}
-
 
 
 @app.post("/receive_screenshot/{session_id}")
@@ -115,7 +124,7 @@ async def stream_screenshot(session_id: str):
     return StreamingResponse(generate_screenshots(session_id), media_type="image/png")
 
 
-@app.post('/terminate_session', response_model=TerminateSessionResponse)
+@app.post("/terminate_session", response_model=TerminateSessionResponse)
 async def terminate_session(terminate_session_request: TerminateSessionRequest):
     session_id = terminate_session_request.session_id
     if session_id not in sessions:
@@ -124,7 +133,7 @@ async def terminate_session(terminate_session_request: TerminateSessionRequest):
     browser = sessions[session_id]
 
     await browser.close()
-    
+
     del sessions[session_id]
     del screenshots[session_id]
 
@@ -153,9 +162,7 @@ def initialize_browser_session(session_id):
     return automation
 
 
-
-
-@app.post('/create_session', response_model=CreateSessionResponse)
+@app.post("/create_session", response_model=CreateSessionResponse)
 async def create_session(create_session_request: CreateSessionRequest):
     session_id = create_session_request.session_id
 
@@ -167,7 +174,7 @@ async def create_session(create_session_request: CreateSessionRequest):
     return {"session_id": session_id}
 
 
-@app.post('/send_command', response_model=CommandResponse)
+@app.post("/send_command", response_model=CommandResponse)
 async def send_command(command_request: CommandRequest):
     session_id = command_request.session_id
     command_text = command_request.command
@@ -193,17 +200,19 @@ async def send_command(command_request: CommandRequest):
         action = result.get("command")
         parameters = result.get("parameters", [])
 
-
-
         # Return the result in the response
-        return {"status": "Command executed", "action": action, "parameters": parameters}
+        return {
+            "status": "Command executed",
+            "action": action,
+            "parameters": parameters,
+        }
 
     except Exception as e:
         # Handle exceptions (e.g., command failures, timeouts)
         return {"status": "Error", "message": str(e)}
 
 
-@app.post('/send_cached_command')
+@app.post("/send_cached_command")
 async def send_cached_command(command_request: CacheRequest):
     session_id = command_request.session_id
     command_text = command_request.command
@@ -216,8 +225,6 @@ async def send_cached_command(command_request: CacheRequest):
 
     print(command_text)
     print(parameters)
-    
-    
 
     try:
         if command_text == "navigate_cache":
@@ -227,10 +234,11 @@ async def send_cached_command(command_request: CacheRequest):
         if command_text == "press_cache":
             await browser.press_cache(parameters[0])
         if command_text == "search_cache":
-            await browser.search_cache(parameters[0], parameters[1], parameters[2], parameters[3])
-
-        
-
+            await browser.search_cache(
+                parameters[0], parameters[1], parameters[2], parameters[3]
+            )
+        if command_text == "fill_out_form_cache":
+            await browser.fill_out_form_cache(parameters[0], parameters[1])
 
         # Return the result in the response
         return {"status": "Cached command executed"}
@@ -240,10 +248,9 @@ async def send_cached_command(command_request: CacheRequest):
         return {"status": "Error", "message": str(e)}
 
 
-@app.get('/session_exists/{session_id}', response_model=SessionExistsResponse)
+@app.get("/session_exists/{session_id}", response_model=SessionExistsResponse)
 async def session_exists(session_id: str):
     return {"exists": session_id in sessions}
-
 
 
 @app.get("/")
@@ -251,4 +258,4 @@ def read_root():
     return {"Welcome to our API :-)"}
 
 
-#uvicorn main:app --reload
+# uvicorn main:app --reload
