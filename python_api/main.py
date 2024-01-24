@@ -186,6 +186,8 @@ async def send_command(command_request: CommandRequest):
         # Await the future to get the result of the command
         result = await future
 
+        print(result)
+
         result = json.loads(result)
 
         action = result.get("command")

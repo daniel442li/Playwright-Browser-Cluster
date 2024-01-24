@@ -272,22 +272,52 @@ class BrowserAutomation:
     
 
     async def fill_out_form(self, parameters):
-        fields = parameters.get("fields")
-        print("Filling out form")
-        print(fields)
+        future = asyncio.Future()
+        
+        async def perform_form_fill():
+            gen_parameters = []
+            fields = parameters.get("fields")
+            if fields == []:
+                elements, choices, multi_choice = await get_multi_inputs(self.page, "input")
+                selection = await answer_multiple_choice_forms("All form elements", multi_choice)
 
-        if fields == []:
-            elements, choices, multi_choice = await get_multi_inputs(self.page, "input")
-            selection = await answer_multiple_choice_forms("All form elements", multi_choice)
+                for input in selection:
+                    try:
+                        print(input)
+                        print(type(input))
+                        answer = input['answer']
+                        element_id = await self._get_index_from_option_name(answer)
+                        target_element = elements[int(choices[element_id][0])]
+                        selector = target_element[-2]
 
-            for input['answer'] in selection:
-                element_id = await self._get_index_from_option_name(input)
-                target_element = elements[int(choices[element_id][0])]
-                selector = target_element[-2]
-                await selector.clear(timeout=10000)
-                await selector.fill("Filler", timeout=10000)
+                        await selector.clear(timeout=10000)
+                        await selector.fill("Default", timeout=10000)
 
-            print(selection)
+                        frame_url_pattern = r"url='(.*?)'"
+                        frame_url_match = re.search(frame_url_pattern, str(selector))
+                        frame_url = frame_url_match.group(1) if frame_url_match else None
+
+                        # Pattern for extracting the selector
+                        selector_pattern = r"selector='(.*?)'"
+                        selector_match = re.search(selector_pattern, str(selector))
+                        selector = selector_match.group(1) if selector_match else None
+
+                        gen_parameters.append([frame_url, selector, "Default"])
+                    except Exception as e:
+                        print(e)
+                        pass
+
+            cached_command = {"command": "fill_out_form_cache", "parameters": gen_parameters}
+            print("Future set")
+            future.set_result(json.dumps(cached_command))
+            
+
+        asyncio.create_task(perform_form_fill())
+
+        # Return the future immediately
+        return future
+
+        
 
 
 

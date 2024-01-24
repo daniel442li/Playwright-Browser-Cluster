@@ -77,7 +77,8 @@ async def answer_multiple_choice(problem, quiz):
     return main_json['answer']
 
 
-def answer_multiple_choice_forms(problem, quiz):
+async def answer_multiple_choice_forms(problem, quiz):
+    print(problem)
     print(quiz)
     completion = client.chat.completions.create(model=model,
     messages=[
