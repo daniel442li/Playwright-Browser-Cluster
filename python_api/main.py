@@ -223,9 +223,6 @@ async def send_cached_command(command_request: CacheRequest):
 
     browser = sessions[session_id]
 
-    print(command_text)
-    print(parameters)
-
     try:
         if command_text == "navigate_cache":
             await browser.navigate_cache(parameters[0])

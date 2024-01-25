@@ -297,21 +297,26 @@ class BrowserAutomation:
                 elements, choices, multi_choice = await get_multi_inputs(
                     self.page, "input"
                 )
+
+
                 selection = await answer_multiple_choice_forms(
                     "All form elements", multi_choice
                 )
 
                 for input in selection:
                     try:
-                        print(input)
-                        print(type(input))
                         answer = input["answer"]
                         element_id = await self._get_index_from_option_name(answer)
                         target_element = elements[int(choices[element_id][0])]
+                        parent_node = target_element[1]
+                        
                         selector = target_element[-2]
 
                         await selector.clear(timeout=10000)
                         await selector.fill("Default", timeout=10000)
+
+                        pattern = r"parent_node: ([\w\s]+) name="
+                        parent_node_text = re.search(pattern, parent_node).group(1) if re.search(pattern, parent_node) else None
 
                         frame_url_pattern = r"url='(.*?)'"
                         frame_url_match = re.search(frame_url_pattern, str(selector))
@@ -324,7 +329,7 @@ class BrowserAutomation:
                         selector_match = re.search(selector_pattern, str(selector))
                         selector = selector_match.group(1) if selector_match else None
 
-                        gen_parameters.append([frame_url, selector, "Default"])
+                        gen_parameters.append([frame_url, selector, parent_node_text, "Default"])
                     except Exception as e:
                         print(e)
                         pass
