@@ -138,11 +138,10 @@ class BrowserAutomation:
         await new_locator.press_sequentially(query, timeout=10000)
 
     async def fill_out_form_cache(self, parameters):
-        print("HI")
         for input in parameters:
             frame = input[0]
             selector = input[1]
-            answer = input[2]
+            answer = input[3]
 
             my_frame = self.page.frame(url=frame)
             if my_frame:
