@@ -23,6 +23,8 @@ class BrowserAutomation:
         self.page = None
         self.async_queue = asyncio.Queue()
         self.command_list = [{}]
+        self.ready = False
+        self.running = False
 
     async def _get_index_from_option_name(self, name):
         if len(name) == 1:
@@ -349,7 +351,7 @@ class BrowserAutomation:
 
             # Sends screenshot to the browser
             # await self.page.add_init_script(observe_dom_script)
-            await self.page.goto("https://nike.com/")
+            await self.page.goto("https://google.com/")
             await self.page.wait_for_load_state('load')
             await self.page.expose_function("_sendDomChange", self.send_dom_change)
 
@@ -394,6 +396,8 @@ class BrowserAutomation:
             await self.send_dom_change()
 
             # Start processing commands
+
+            self.ready = True
             await self.process_commands()
             # Additional actions can be added here
 
@@ -404,3 +408,7 @@ class BrowserAutomation:
             await self.browser.close()
         if self.queue is not None:
             await self.queue.async_q.put(None)  # To stop the command processing loop
+
+    
+    async def set_running(self):
+        self.running = not self.running

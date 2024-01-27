@@ -127,6 +127,7 @@ async def stream_dom(session_id: str):
         with open(file_path, "r") as file:
             for line in file:
                 yield f"data: {line}\n\n"
+        yield "data: {\"endOfTransmission\": true}\n\n"
 
     return StreamingResponse(file_generator(), media_type="text/event-stream")
 
@@ -255,6 +256,18 @@ async def send_cached_command(command_request: CacheRequest):
 @app.get("/session_exists/{session_id}", response_model=SessionExistsResponse)
 async def session_exists(session_id: str):
     return {"exists": session_id in sessions}
+
+@app.get("/session_exists/{session_id}", response_model=SessionExistsResponse)
+async def session_ready(session_id: str):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Invalid session ID")
+
+    browser = sessions[session_id]
+
+    if browser.ready:
+        return {"ready": True}
+    else:
+        return {"ready": False}
 
 
 @app.get("/")
