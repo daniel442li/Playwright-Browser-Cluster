@@ -80,6 +80,9 @@ class SessionExistsResponse(BaseModel):
     exists: bool
 
 
+class DOMData(BaseModel):
+    dom_data: str
+
 # Allow CORS
 origins = [
     "http://localhost:3000",  # React app
@@ -102,26 +105,26 @@ dom_changes: Dict[str, asyncio.Queue] = {}
 
 
 @app.post("/receive_dom/{session_id}")
-async def receive_dom(session_id: str, dom_data: str):
+async def receive_dom(session_id: str, data: DOMData):
     if session_id not in dom_changes:
         dom_changes[session_id] = asyncio.Queue()
-    await dom_changes[session_id].put(dom_data)
+    await dom_changes[session_id].put(data.dom_data)
     return {"message": "DOM change received"}
 
 
 @app.get("/stream_dom/{session_id}")
 async def stream_dom(session_id: str):
     if session_id not in dom_changes:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=405, detail="Session not found")
 
     async def generate_dom_changes(session_id):
         while True:
             if not dom_changes[session_id].empty():
                 dom_change = await dom_changes[session_id].get()
-                yield dom_change
+                yield f"data: {dom_change}\n\n"
             await asyncio.sleep(1)  # Adjust the sleep time as needed
 
-    return StreamingResponse(generate_dom_changes(session_id), media_type="text/plain")
+    return StreamingResponse(generate_dom_changes(session_id), media_type="text/event-stream")
 
 
 @app.post("/terminate_session", response_model=TerminateSessionResponse)

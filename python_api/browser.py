@@ -35,12 +35,17 @@ class BrowserAutomation:
             raise Exception("The string should be either 1 or 2 characters long")
 
     async def send_dom_change(self, dom_change):
-        print("sending dom")
-        # Send the DOM change to your backend
+        # Convert dom_change to a string if it's not
+        if not isinstance(dom_change, str):
+            dom_change = json.dumps(dom_change)
+
+        #Whole html
+        page_html = await self.page.content()
+
         async with httpx.AsyncClient() as client:
             await client.post(
                 f"http://localhost:8000/receive_dom/{self.session_id}",
-                data={"dom_data": dom_change},
+                json={"dom_data": page_html}
             )
 
 
@@ -354,31 +359,33 @@ class BrowserAutomation:
                 const debounce = (func, delay) => {
                     clearTimeout(debounceTimer);
                     debounceTimer = setTimeout(() => {
-                        func(aggregatedChanges);
+                        func(aggregatedChanges.join(''));
                         aggregatedChanges = []; // Reset the aggregated changes
                     }, delay);
                 };
 
                 var callback = function(mutationsList, observer) {
                     for(var mutation of mutationsList) {
-                        if (mutation.type === 'childList') {
-                            aggregatedChanges.push('A child node has been added or removed.');
+                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                            mutation.addedNodes.forEach(node => {
+                                if (node.outerHTML) {
+                                    aggregatedChanges.push(node.outerHTML);
+                                }
+                            });
                         }
-                        else if (mutation.type === 'attributes') {
-                            aggregatedChanges.push('The ' + mutation.attributeName + ' attribute was modified.');
-                        }
+                        // Handle other types of mutations if necessary
                     }
 
-                    debounce((changes) => {
-                        if(changes.length > 0) {
-                            console.log(changes.join(', '));
-                            window._sendDomChange(changes.join(', '));
+                    debounce((htmlContent) => {
+                        if(htmlContent) {
+                            console.log('Sending HTML content');
+                            window._sendDomChange(htmlContent);
                         }
-                    }, 1000);  // Increased debounce delay
+                    }, 1000);  // Debounce delay
                 };
 
                 var observer = new MutationObserver(callback);
-                observer.observe(document.body, { attributes: true, childList: true, subtree: true });
+                observer.observe(document.body, { childList: true, subtree: true });
             }''')
 
             
