@@ -12,6 +12,7 @@ from heartbeat import check_sessions
 from gpt_commands_new import ai_command
 from browser import BrowserAutomation
 import json
+import os 
 
 load_dotenv(find_dotenv())
 
@@ -101,30 +102,33 @@ app.add_middleware(
 
 # Dictionary to store session data
 sessions: Dict[str, BrowserAutomation] = {}
-dom_changes: Dict[str, asyncio.Queue] = {}
-
+dom_changes: Dict[str, str] = {}  # Mapping of session_id to file path
 
 @app.post("/receive_dom/{session_id}")
 async def receive_dom(session_id: str, data: DOMData):
-    if session_id not in dom_changes:
-        dom_changes[session_id] = asyncio.Queue()
-    await dom_changes[session_id].put(data.dom_data)
+    file_path = f"./html/dom_{session_id}.html"  # Create a unique file name for each session within the /html folder
+    dom_changes[session_id] = file_path
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Ensure the /html directory exists
+    with open(file_path, "w") as file:
+        file.write(data.dom_data)
     return {"message": "DOM change received"}
 
 
 @app.get("/stream_dom/{session_id}")
 async def stream_dom(session_id: str):
     if session_id not in dom_changes:
-        raise HTTPException(status_code=405, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Session not found")
 
-    async def generate_dom_changes(session_id):
-        while True:
-            if not dom_changes[session_id].empty():
-                dom_change = await dom_changes[session_id].get()
-                yield f"data: {dom_change}\n\n"
-            await asyncio.sleep(1)  # Adjust the sleep time as needed
+    file_path = dom_changes[session_id]
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
 
-    return StreamingResponse(generate_dom_changes(session_id), media_type="text/event-stream")
+    def file_generator():
+        with open(file_path, "r") as file:
+            for line in file:
+                yield f"data: {line}\n\n"
+
+    return StreamingResponse(file_generator(), media_type="text/event-stream")
 
 
 @app.post("/terminate_session", response_model=TerminateSessionResponse)

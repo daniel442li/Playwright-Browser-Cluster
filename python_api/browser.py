@@ -34,18 +34,20 @@ class BrowserAutomation:
         else:
             raise Exception("The string should be either 1 or 2 characters long")
 
-    async def send_dom_change(self, dom_change):
+    async def send_dom_change(self, dom_change=None):
         # Convert dom_change to a string if it's not
-        if not isinstance(dom_change, str):
-            dom_change = json.dumps(dom_change)
+        # if not isinstance(dom_change, str):
+        #     dom_change = json.dumps(dom_change)
 
         #Whole html
         page_html = await self.page.content()
 
+        print("Sending DOM change")
+        print(page_html)
         async with httpx.AsyncClient() as client:
             await client.post(
                 f"http://localhost:8000/receive_dom/{self.session_id}",
-                json={"dom_data": page_html}
+                json={"dom_data": str(page_html)}
             )
 
 
@@ -347,7 +349,7 @@ class BrowserAutomation:
 
             # Sends screenshot to the browser
             # await self.page.add_init_script(observe_dom_script)
-            await self.page.goto("http://google.com")
+            await self.page.goto("https://nike.com/")
             await self.page.wait_for_load_state('load')
             await self.page.expose_function("_sendDomChange", self.send_dom_change)
 
@@ -388,7 +390,8 @@ class BrowserAutomation:
                 observer.observe(document.body, { childList: true, subtree: true });
             }''')
 
-            
+            time.sleep(5)
+            await self.send_dom_change()
 
             # Start processing commands
             await self.process_commands()
