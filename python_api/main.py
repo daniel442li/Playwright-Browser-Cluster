@@ -80,6 +80,9 @@ class SessionExistsRequest(BaseModel):
 class SessionExistsResponse(BaseModel):
     exists: bool
 
+class SessionReadyResponse(BaseModel):
+    ready: bool
+
 
 class DOMData(BaseModel):
     dom_data: str
@@ -104,32 +107,32 @@ app.add_middleware(
 sessions: Dict[str, BrowserAutomation] = {}
 dom_changes: Dict[str, str] = {}  # Mapping of session_id to file path
 
-@app.post("/receive_dom/{session_id}")
-async def receive_dom(session_id: str, data: DOMData):
-    file_path = f"./html/dom_{session_id}.html"  # Create a unique file name for each session within the /html folder
-    dom_changes[session_id] = file_path
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Ensure the /html directory exists
-    with open(file_path, "w") as file:
-        file.write(data.dom_data)
-    return {"message": "DOM change received"}
+# @app.post("/receive_dom/{session_id}")
+# async def receive_dom(session_id: str, data: DOMData):
+#     file_path = f"./html/dom_{session_id}.html"  # Create a unique file name for each session within the /html folder
+#     dom_changes[session_id] = file_path
+#     os.makedirs(os.path.dirname(file_path), exist_ok=True)  # Ensure the /html directory exists
+#     with open(file_path, "w") as file:
+#         file.write(data.dom_data)
+#     return {"message": "DOM change received"}
 
 
-@app.get("/stream_dom/{session_id}")
-async def stream_dom(session_id: str):
-    if session_id not in dom_changes:
-        raise HTTPException(status_code=404, detail="Session not found")
+# @app.get("/stream_dom/{session_id}")
+# async def stream_dom(session_id: str):
+#     if session_id not in dom_changes:
+#         raise HTTPException(status_code=404, detail="Session not found")
 
-    file_path = dom_changes[session_id]
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
+#     file_path = dom_changes[session_id]
+#     if not os.path.exists(file_path):
+#         raise HTTPException(status_code=404, detail="File not found")
 
-    def file_generator():
-        with open(file_path, "r") as file:
-            for line in file:
-                yield f"data: {line}\n\n"
-        yield "data: {\"endOfTransmission\": true}\n\n"
+#     def file_generator():
+#         with open(file_path, "r") as file:
+#             for line in file:
+#                 yield f"data: {line}\n\n"
+#         yield "data: {\"endOfTransmission\": true}\n\n"
 
-    return StreamingResponse(file_generator(), media_type="text/event-stream")
+#     return StreamingResponse(file_generator(), media_type="text/event-stream")
 
 
 @app.post("/terminate_session", response_model=TerminateSessionResponse)
@@ -257,17 +260,17 @@ async def send_cached_command(command_request: CacheRequest):
 async def session_exists(session_id: str):
     return {"exists": session_id in sessions}
 
-@app.get("/session_exists/{session_id}", response_model=SessionExistsResponse)
+
+@app.get("/session_ready/{session_id}", response_model=SessionReadyResponse)
 async def session_ready(session_id: str):
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Invalid session ID")
 
     browser = sessions[session_id]
 
-    if browser.ready:
-        return {"ready": True}
-    else:
-        return {"ready": False}
+
+    return {"ready": browser.ready}
+    
 
 
 @app.get("/")

@@ -25,6 +25,7 @@ class BrowserAutomation:
         self.command_list = [{}]
         self.ready = False
         self.running = False
+        self.isViewed = False
 
     async def _get_index_from_option_name(self, name):
         if len(name) == 1:
@@ -393,11 +394,12 @@ class BrowserAutomation:
             }''')
 
             time.sleep(5)
-            await self.send_dom_change()
+            # await self.send_dom_change()
 
             # Start processing commands
 
-            self.ready = True
+            print("Ready!")
+            await self.set_ready()
             await self.process_commands()
             # Additional actions can be added here
 
@@ -410,5 +412,11 @@ class BrowserAutomation:
             await self.queue.async_q.put(None)  # To stop the command processing loop
 
     
+    async def set_ready(self):
+        self.ready = not self.ready
+
     async def set_running(self):
         self.running = not self.running
+
+    async def set_viewed(self):
+        self.isViewed = not self.isViewed
