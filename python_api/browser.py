@@ -34,30 +34,15 @@ class BrowserAutomation:
         else:
             raise Exception("The string should be either 1 or 2 characters long")
 
-    async def _take_and_send_screenshot(self):
-        screenshot = await self.page.screenshot()
-        current_hash = hashlib.md5(screenshot).hexdigest()
+    async def send_dom_change(self, dom_change):
+        print("sending dom")
+        # Send the DOM change to your backend
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                f"http://localhost:8000/receive_dom/{self.session_id}",
+                data={"dom_data": dom_change},
+            )
 
-        if current_hash != self.last_screenshot_hash:
-            self.last_screenshot_hash = current_hash
-            async with httpx.AsyncClient() as client:
-                await client.post(
-                    f"http://localhost:8000/receive_screenshot/{self.session_id}",
-                    files={"file": screenshot},
-                )
-
-    async def _on_dom_change(self):
-        if self.screenshot_debounce_timer is not None:
-            self.screenshot_debounce_timer.cancel()
-
-        self.screenshot_debounce_timer = asyncio.create_task(
-            asyncio.sleep(0.1)
-        )  # Debounce for 100 milliseconds
-        try:
-            await self.screenshot_debounce_timer
-            await self._take_and_send_screenshot()
-        except asyncio.CancelledError:
-            pass
 
     # Asynchronous method to add commands to the queue
     async def add_command_async(self, command_json):
@@ -352,17 +337,51 @@ class BrowserAutomation:
             self.page = await self.browser.new_page()
 
             await stealth_async(self.page)
-            await self.page.expose_function("onCustomDOMChange", self._on_dom_change)
 
-            observe_dom_script = """
-                new MutationObserver(async () => {
-                    await window.onCustomDOMChange(); // Notify Python about the DOM change
-                }).observe(document, { childList: true, subtree: true });
-            """
+            
 
             # Sends screenshot to the browser
             # await self.page.add_init_script(observe_dom_script)
             await self.page.goto("http://google.com")
+            await self.page.wait_for_load_state('load')
+            await self.page.expose_function("_sendDomChange", self.send_dom_change)
+
+            # Set up a mutation observer to listen to DOM changes
+            await self.page.evaluate('''() => {
+                let debounceTimer;
+                let aggregatedChanges = [];
+
+                const debounce = (func, delay) => {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        func(aggregatedChanges);
+                        aggregatedChanges = []; // Reset the aggregated changes
+                    }, delay);
+                };
+
+                var callback = function(mutationsList, observer) {
+                    for(var mutation of mutationsList) {
+                        if (mutation.type === 'childList') {
+                            aggregatedChanges.push('A child node has been added or removed.');
+                        }
+                        else if (mutation.type === 'attributes') {
+                            aggregatedChanges.push('The ' + mutation.attributeName + ' attribute was modified.');
+                        }
+                    }
+
+                    debounce((changes) => {
+                        if(changes.length > 0) {
+                            console.log(changes.join(', '));
+                            window._sendDomChange(changes.join(', '));
+                        }
+                    }, 1000);  // Increased debounce delay
+                };
+
+                var observer = new MutationObserver(callback);
+                observer.observe(document.body, { attributes: true, childList: true, subtree: true });
+            }''')
+
+            
 
             # Start processing commands
             await self.process_commands()

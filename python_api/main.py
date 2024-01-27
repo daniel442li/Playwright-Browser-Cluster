@@ -98,30 +98,30 @@ app.add_middleware(
 
 # Dictionary to store session data
 sessions: Dict[str, BrowserAutomation] = {}
-screenshots: Dict[str, asyncio.Queue] = {}
+dom_changes: Dict[str, asyncio.Queue] = {}
 
 
-@app.post("/receive_screenshot/{session_id}")
-async def receive_screenshot(session_id: str, file: UploadFile = File(...)):
-    if session_id not in sessions:
-        screenshots[session_id] = asyncio.Queue()
-    await screenshots[session_id].put(await file.read())
-    return {"message": "Screenshot received"}
+@app.post("/receive_dom/{session_id}")
+async def receive_dom(session_id: str, dom_data: str):
+    if session_id not in dom_changes:
+        dom_changes[session_id] = asyncio.Queue()
+    await dom_changes[session_id].put(dom_data)
+    return {"message": "DOM change received"}
 
 
-@app.get("/stream_screenshot/{session_id}")
-async def stream_screenshot(session_id: str):
-    if session_id not in screenshots:
+@app.get("/stream_dom/{session_id}")
+async def stream_dom(session_id: str):
+    if session_id not in dom_changes:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    async def generate_screenshots(session_id):
+    async def generate_dom_changes(session_id):
         while True:
-            if not screenshots[session_id].empty():
-                screenshot = await screenshots[session_id].get()
-                yield screenshot
+            if not dom_changes[session_id].empty():
+                dom_change = await dom_changes[session_id].get()
+                yield dom_change
             await asyncio.sleep(1)  # Adjust the sleep time as needed
 
-    return StreamingResponse(generate_screenshots(session_id), media_type="image/png")
+    return StreamingResponse(generate_dom_changes(session_id), media_type="text/plain")
 
 
 @app.post("/terminate_session", response_model=TerminateSessionResponse)
@@ -135,7 +135,7 @@ async def terminate_session(terminate_session_request: TerminateSessionRequest):
     await browser.close()
 
     del sessions[session_id]
-    del screenshots[session_id]
+    del dom_changes[session_id]
 
     return {"message": "Session terminated successfully"}
 
@@ -170,7 +170,7 @@ async def create_session(create_session_request: CreateSessionRequest):
         raise HTTPException(status_code=409, detail="Session ID already exists")
     browser = initialize_browser_session(session_id)
     sessions[session_id] = browser
-    screenshots[session_id] = asyncio.Queue()
+    dom_changes[session_id] = asyncio.Queue()
     return {"session_id": session_id}
 
 
