@@ -11,6 +11,7 @@ from selection import answer_multiple_choice_forms
 import re
 from playwright_stealth import stealth_async
 import time
+import base64
 
 
 class BrowserAutomation:
@@ -37,20 +38,18 @@ class BrowserAutomation:
         else:
             raise Exception("The string should be either 1 or 2 characters long")
 
-    async def send_dom_change(self, dom_change=None):
-        # Convert dom_change to a string if it's not
-        # if not isinstance(dom_change, str):
-        #     dom_change = json.dumps(dom_change)
+    async def send_screenshot(self):
+        # Capture a screenshot directly to memory
+        screenshot_data = await self.page.screenshot(full_page=True)
 
-        #Whole html
-        page_html = await self.page.content()
+        # Encode the binary data in Base64
+        base64_encoded_image = base64.b64encode(screenshot_data).decode('utf-8')
 
-        print("Sending DOM change")
-        print(page_html)
+        print("Sending screenshot in Base64 format")
         async with httpx.AsyncClient() as client:
             await client.post(
-                f"http://localhost:8000/receive_dom/{self.session_id}",
-                json={"dom_data": str(page_html)}
+                f"http://localhost:8000/receive_image/{self.session_id}",
+                json={"image_data": base64_encoded_image}
             )
 
 
@@ -58,6 +57,7 @@ class BrowserAutomation:
     async def add_command_async(self, command_json):
         future = asyncio.Future()
         await self.queue.async_q.put((command_json, future))
+        # await self.send_screenshot()
         return future
 
     async def add_cache_command_async(self, command_json):
@@ -354,52 +354,54 @@ class BrowserAutomation:
             # await self.page.add_init_script(observe_dom_script)
             await self.page.goto("https://google.com/")
             await self.page.wait_for_load_state('load')
-            await self.page.expose_function("_sendDomChange", self.send_dom_change)
+            # await self.page.expose_function("_sendDomChange", self.send_dom_change)
 
-            # Set up a mutation observer to listen to DOM changes
-            await self.page.evaluate('''() => {
-                let debounceTimer;
-                let aggregatedChanges = [];
+            # # Set up a mutation observer to listen to DOM changes
+            # await self.page.evaluate('''() => {
+            #     let debounceTimer;
+            #     let aggregatedChanges = [];
 
-                const debounce = (func, delay) => {
-                    clearTimeout(debounceTimer);
-                    debounceTimer = setTimeout(() => {
-                        func(aggregatedChanges.join(''));
-                        aggregatedChanges = []; // Reset the aggregated changes
-                    }, delay);
-                };
+            #     const debounce = (func, delay) => {
+            #         clearTimeout(debounceTimer);
+            #         debounceTimer = setTimeout(() => {
+            #             func(aggregatedChanges.join(''));
+            #             aggregatedChanges = []; // Reset the aggregated changes
+            #         }, delay);
+            #     };
 
-                var callback = function(mutationsList, observer) {
-                    for(var mutation of mutationsList) {
-                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                            mutation.addedNodes.forEach(node => {
-                                if (node.outerHTML) {
-                                    aggregatedChanges.push(node.outerHTML);
-                                }
-                            });
-                        }
-                        // Handle other types of mutations if necessary
-                    }
+            #     var callback = function(mutationsList, observer) {
+            #         for(var mutation of mutationsList) {
+            #             if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            #                 mutation.addedNodes.forEach(node => {
+            #                     if (node.outerHTML) {
+            #                         aggregatedChanges.push(node.outerHTML);
+            #                     }
+            #                 });
+            #             }
+            #             // Handle other types of mutations if necessary
+            #         }
 
-                    debounce((htmlContent) => {
-                        if(htmlContent) {
-                            console.log('Sending HTML content');
-                            window._sendDomChange(htmlContent);
-                        }
-                    }, 1000);  // Debounce delay
-                };
+            #         debounce((htmlContent) => {
+            #             if(htmlContent) {
+            #                 console.log('Sending HTML content');
+            #                 window._sendDomChange(htmlContent);
+            #             }
+            #         }, 1000);  // Debounce delay
+            #     };
 
-                var observer = new MutationObserver(callback);
-                observer.observe(document.body, { childList: true, subtree: true });
-            }''')
+            #     var observer = new MutationObserver(callback);
+            #     observer.observe(document.body, { childList: true, subtree: true });
+            # }''')
 
-            time.sleep(5)
+            # time.sleep(5)
             # await self.send_dom_change()
 
             # Start processing commands
 
             print("Ready!")
             await self.set_ready()
+
+            await self.send_screenshot()
             await self.process_commands()
             # Additional actions can be added here
 
