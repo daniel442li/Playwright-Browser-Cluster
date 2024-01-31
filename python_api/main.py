@@ -12,7 +12,6 @@ from heartbeat import check_sessions
 from gpt_commands_new import ai_command
 from browser import BrowserAutomation
 import json
-import os 
 import base64
 
 load_dotenv(find_dotenv())
@@ -48,6 +47,11 @@ class CreateSessionResponse(BaseModel):
 class CommandRequestNavigate(BaseModel):
     session_id: str
     link: str
+
+
+class CommandRequestPress(BaseModel):
+    session_id: str
+    key: str
 
 
 class CommandResponse(BaseModel):
@@ -190,7 +194,7 @@ async def create_session(create_session_request: CreateSessionRequest):
 @app.post("/send_command_navigate", response_model=CommandResponse)
 async def send_command_navigate(command_request_navigate: CommandRequestNavigate):
     session_id = command_request_navigate.session_id
-    link = command_request_navigate.link
+    link = command_request_navigate.key
 
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Invalid session ID")
@@ -222,25 +226,25 @@ async def send_command_navigate(command_request_navigate: CommandRequestNavigate
         # Handle exceptions (e.g., command failures, timeouts)
         return {"status": "Error", "message": str(e)}
 
-    # command = ai_command(command_text.upper())
 
-    # {'command': 'navigate', 'parameters': {'link': 'https://google.com'}}
+@app.post("/send_command_press", response_model=CommandResponse)
+async def send_command_press(command_request_press: CommandRequestPress):
+    session_id = command_request_press.session_id
+    key = command_request_press.key
+
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Invalid session ID")
+
+    browser = sessions[session_id]
 
     try:
-        # Add the command to the browser session and get the future
-        future = await browser.add_command_async(command)
-        
+        future = await browser.press(key)
 
-        # Await the future to get the result of the command
         result = await future
-
-        print(result)
 
         result = json.loads(result)
 
-        print("send screenshot now")
         await browser.send_screenshot()
-        
 
         action = result.get("command")
         parameters = result.get("parameters", [])
@@ -254,10 +258,10 @@ async def send_command_navigate(command_request_navigate: CommandRequestNavigate
             "action": action,
             "parameters": parameters,
         }
-
     except Exception as e:
         # Handle exceptions (e.g., command failures, timeouts)
         return {"status": "Error", "message": str(e)}
+
 
 
 @app.post("/send_cached_command")

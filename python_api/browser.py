@@ -219,7 +219,7 @@ class BrowserAutomation:
 
                 await self.page.goto(link)
 
-                cached_command = {"command": "Cache_Navigate", "parameters": [link]}
+                cached_command = {"command": "cache_navigate", "parameters": [link]}
                 future.set_result(json.dumps(cached_command))
 
             except Exception as e:
@@ -271,14 +271,13 @@ class BrowserAutomation:
         # Return the future immediately
         return future
 
-    async def press(self, parameters):
+    async def press(self, key):
         future = asyncio.Future()
 
         async def perform_press():
             try:
-                key = parameters.get("key")
                 await self.page.keyboard.press(key)
-                cached_command = {"command": "press_cache", "parameters": [key]}
+                cached_command = {"command": "cache_press", "parameters": [key]}
                 future.set_result(json.dumps(cached_command))
             except Exception as e:
                 future.set_exception(e)
