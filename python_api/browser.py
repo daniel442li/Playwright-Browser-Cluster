@@ -147,12 +147,11 @@ class BrowserAutomation:
             await new_locator.clear(timeout=10000)
             await new_locator.fill(answer, timeout=10000)
 
-    async def search(self, parameters):
+    async def search(self, query):
         future = asyncio.Future()
 
         async def perform_search():
             try:
-                query = parameters.get("query")
                 elements, choices, multi_choice = await get_multi_inputs(
                     self.page, "input"
                 )
@@ -168,7 +167,6 @@ class BrowserAutomation:
                 type_selector = re.search(pattern, str(selector)).group(1)
 
                 if type_selector == "input":
-                    print("here")
                     await selector.clear(timeout=10000)
                 elif type_selector == "button" or type_selector == "textarea":
                     await selector.evaluate("element => element.click()", timeout=10000)
@@ -187,7 +185,7 @@ class BrowserAutomation:
                 selector = selector_match.group(1) if selector_match else None
 
                 cached_command = {
-                    "command": "search_cache",
+                    "command": "cache_search",
                     "parameters": [query, frame_url, selector, type_selector],
                 }
                 future.set_result(json.dumps(cached_command))

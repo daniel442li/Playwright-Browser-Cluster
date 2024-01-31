@@ -48,6 +48,9 @@ class CommandRequestNavigate(BaseModel):
     session_id: str
     link: str
 
+class CommandRequestSearch(BaseModel):
+    session_id: str
+    query: str
 
 class CommandRequestPress(BaseModel):
     session_id: str
@@ -65,6 +68,9 @@ class CacheRequest(BaseModel):
     command: str
     parameters: list
 
+class CacheSearchRequest(BaseModel):
+    session_id: str
+    parameters: list
 
 class SessionList(BaseModel):
     sessions: list
@@ -194,7 +200,7 @@ async def create_session(create_session_request: CreateSessionRequest):
 @app.post("/send_command_navigate", response_model=CommandResponse)
 async def send_command_navigate(command_request_navigate: CommandRequestNavigate):
     session_id = command_request_navigate.session_id
-    link = command_request_navigate.key
+    link = command_request_navigate.link
 
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Invalid session ID")
@@ -208,12 +214,10 @@ async def send_command_navigate(command_request_navigate: CommandRequestNavigate
 
         result = json.loads(result)
 
-        await browser.send_screenshot()
-
         action = result.get("command")
         parameters = result.get("parameters", [])
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.5)
         await browser.send_screenshot()
 
         # Return the result in the response
@@ -244,12 +248,11 @@ async def send_command_press(command_request_press: CommandRequestPress):
 
         result = json.loads(result)
 
-        await browser.send_screenshot()
 
         action = result.get("command")
         parameters = result.get("parameters", [])
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.5)
         await browser.send_screenshot()
 
         # Return the result in the response
@@ -263,6 +266,63 @@ async def send_command_press(command_request_press: CommandRequestPress):
         return {"status": "Error", "message": str(e)}
 
 
+@app.post("/send_command_search", response_model=CommandResponse)
+async def send_command_search(command_request_search: CommandRequestSearch):
+    session_id = command_request_search.session_id
+    query = command_request_search.query
+
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Invalid session ID")
+
+    browser = sessions[session_id]
+
+    try:
+        future = await browser.search(query)
+
+        result = await future
+
+        result = json.loads(result)
+
+
+        action = result.get("command")
+        parameters = result.get("parameters", [])
+
+        await asyncio.sleep(0.5)
+        await browser.send_screenshot()
+
+        # Return the result in the response
+        return {
+            "status": "Command executed",
+            "action": action,
+            "parameters": parameters,
+        }
+    except Exception as e:
+        # Handle exceptions (e.g., command failures, timeouts)
+        return {"status": "Error", "message": str(e)}
+
+
+@app.post("/send_cached_search")
+async def send_cached_search(command_cache_search: CacheSearchRequest):
+    session_id = command_cache_search.session_id
+    parameters = command_cache_search.parameters
+
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Invalid session ID")
+
+    browser = sessions[session_id]
+
+    try:
+        await browser.search_cache(
+                parameters[0], parameters[1], parameters[2], parameters[3]
+        )
+
+        # Return the result in the response
+        return {"status": "Cached command executed"}
+
+    except Exception as e:
+        # Handle exceptions (e.g., command failures, timeouts)
+        return {"status": "Error", "message": str(e)}
+    
 
 @app.post("/send_cached_command")
 async def send_cached_command(command_request: CacheRequest):
