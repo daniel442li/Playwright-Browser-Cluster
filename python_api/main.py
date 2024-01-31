@@ -66,6 +66,8 @@ class CommandResponse(BaseModel):
     action: str
     parameters: list
 
+class FillForms(BaseModel):
+    session_id: str
 
 class CacheRequest(BaseModel):
     session_id: str
@@ -301,6 +303,29 @@ async def send_command_search(command_request_search: CommandRequestSearch):
         return {"status": "Error", "message": str(e)}
     
 
+@app.post("/send_cached_search")
+async def send_cached_search(command_cache_search: CacheRequest):
+    session_id = command_cache_search.session_id
+    parameters = command_cache_search.parameters
+
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Invalid session ID")
+
+    browser = sessions[session_id]
+
+    try:
+        await browser.search_cache(
+                parameters[0], parameters[1], parameters[2], parameters[3]
+        )
+
+        # Return the result in the response
+        return {"status": "Cached command executed"}
+
+    except Exception as e:
+        # Handle exceptions (e.g., command failures, timeouts)
+        return {"status": "Error", "message": str(e)}
+    
+
 @app.post("/send_command_click", response_model=CommandResponse)
 async def send_command_click(command_request_search: CommandRequestClick):
     session_id = command_request_search.session_id
@@ -351,7 +376,7 @@ async def send_cached_click(command_cache_search: CacheRequest):
         # Return the result in the response
         await asyncio.sleep(0.5)
         await browser.send_screenshot()
-        
+
         return {"status": "Cached command executed"}
 
     except Exception as e:
@@ -359,8 +384,42 @@ async def send_cached_click(command_cache_search: CacheRequest):
         return {"status": "Error", "message": str(e)}
     
 
-@app.post("/send_cached_search")
-async def send_cached_search(command_cache_search: CacheRequest):
+@app.post("/send_fill_forms")
+async def send_fill_forms(fill_forms: FillForms):
+    session_id = fill_forms.session_id
+
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Invalid session ID")
+
+    browser = sessions[session_id]
+
+    try:
+        future = await browser.fill_out_form()
+
+        result = await future
+
+        result = json.loads(result)
+
+
+        action = result.get("command")
+        parameters = result.get("parameters", [])
+
+        await asyncio.sleep(0.5)
+        await browser.send_screenshot()
+
+        # Return the result in the response
+        return {
+            "status": "Command executed",
+            "action": action,
+            "parameters": parameters,
+        }
+    except Exception as e:
+        # Handle exceptions (e.g., command failures, timeouts)
+        return {"status": "Error", "message": str(e)}
+    
+
+@app.post("/send_cached_fill_forms")
+async def send_cached_fill_forms(command_cache_search: CacheRequest):
     session_id = command_cache_search.session_id
     parameters = command_cache_search.parameters
 
@@ -370,44 +429,11 @@ async def send_cached_search(command_cache_search: CacheRequest):
     browser = sessions[session_id]
 
     try:
-        await browser.search_cache(
-                parameters[0], parameters[1], parameters[2], parameters[3]
-        )
-
+        await browser.fill_out_form_cache(parameters)
         # Return the result in the response
-        return {"status": "Cached command executed"}
+        await asyncio.sleep(0.5)
+        await browser.send_screenshot()
 
-    except Exception as e:
-        # Handle exceptions (e.g., command failures, timeouts)
-        return {"status": "Error", "message": str(e)}
-    
-
-@app.post("/send_cached_command")
-async def send_cached_command(command_request: CacheRequest):
-    session_id = command_request.session_id
-    command_text = command_request.command
-    parameters = command_request.parameters
-
-    if session_id not in sessions:
-        raise HTTPException(status_code=404, detail="Invalid session ID")
-
-    browser = sessions[session_id]
-
-    try:
-        if command_text == "navigate_cache":
-            await browser.navigate_cache(parameters[0])
-        if command_text == "click_cache":
-            await browser.click_cache(parameters[0], parameters[1])
-        if command_text == "press_cache":
-            await browser.press_cache(parameters[0])
-        if command_text == "search_cache":
-            await browser.search_cache(
-                parameters[0], parameters[1], parameters[2], parameters[3]
-            )
-        if command_text == "fill_out_form_cache":
-            await browser.fill_out_form_cache(parameters)
-
-        # Return the result in the response
         return {"status": "Cached command executed"}
 
     except Exception as e:

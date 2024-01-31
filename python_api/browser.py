@@ -285,58 +285,56 @@ class BrowserAutomation:
         # Return the future immediately
         return future
 
-    async def fill_out_form(self, parameters):
+    async def fill_out_form(self):
         future = asyncio.Future()
 
         async def perform_form_fill():
             gen_parameters = []
-            fields = parameters.get("fields")
-            if fields == []:
-                elements, choices, multi_choice = await get_multi_inputs(
-                    self.page, "input"
-                )
+            
+            elements, choices, multi_choice = await get_multi_inputs(
+                self.page, "input"
+            )
 
 
-                selection = await answer_multiple_choice_forms(
-                    "All form elements", multi_choice
-                )
+            selection = await answer_multiple_choice_forms(
+                "All form elements", multi_choice
+            )
 
-                for input in selection:
-                    try:
-                        answer = input["answer"]
-                        element_id = await self._get_index_from_option_name(answer)
-                        target_element = elements[int(choices[element_id][0])]
-                        parent_node = target_element[1]
-                        
-                        selector = target_element[-2]
+            for input in selection:
+                try:
+                    answer = input["answer"]
+                    element_id = await self._get_index_from_option_name(answer)
+                    target_element = elements[int(choices[element_id][0])]
+                    parent_node = target_element[1]
+                    
+                    selector = target_element[-2]
 
-                        await selector.clear(timeout=10000)
-                        await selector.fill("Default", timeout=10000)
+                    await selector.clear(timeout=10000)
+                    await selector.fill("Default", timeout=10000)
 
-                        pattern = r"parent_node: ([\w\s]+) name="
-                        parent_node_text = re.search(pattern, parent_node).group(1) if re.search(pattern, parent_node) else None
+                    pattern = r"parent_node: ([\w\s]+) name="
+                    parent_node_text = re.search(pattern, parent_node).group(1) if re.search(pattern, parent_node) else None
 
-                        frame_url_pattern = r"url='(.*?)'"
-                        frame_url_match = re.search(frame_url_pattern, str(selector))
-                        frame_url = (
-                            frame_url_match.group(1) if frame_url_match else None
-                        )
+                    frame_url_pattern = r"url='(.*?)'"
+                    frame_url_match = re.search(frame_url_pattern, str(selector))
+                    frame_url = (
+                        frame_url_match.group(1) if frame_url_match else None
+                    )
 
-                        # Pattern for extracting the selector
-                        selector_pattern = r"selector='(.*?)'"
-                        selector_match = re.search(selector_pattern, str(selector))
-                        selector = selector_match.group(1) if selector_match else None
+                    # Pattern for extracting the selector
+                    selector_pattern = r"selector='(.*?)'"
+                    selector_match = re.search(selector_pattern, str(selector))
+                    selector = selector_match.group(1) if selector_match else None
 
-                        gen_parameters.append([frame_url, selector, parent_node_text, "Default"])
-                    except Exception as e:
-                        print(e)
-                        pass
+                    gen_parameters.append([frame_url, selector, parent_node_text, "Default"])
+                except Exception as e:
+                    print(e)
+                    pass
 
             cached_command = {
                 "command": "fill_out_form_cache",
                 "parameters": gen_parameters,
             }
-            print("Future set")
             future.set_result(json.dumps(cached_command))
 
         asyncio.create_task(perform_form_fill())
