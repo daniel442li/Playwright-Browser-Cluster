@@ -1,9 +1,7 @@
 import asyncio
 from playwright.async_api import async_playwright
-import hashlib
 import httpx
 import json
-import janus
 from multi_choice import get_multi_inputs
 import string
 from selection import answer_multiple_choice
@@ -17,13 +15,10 @@ import base64
 class BrowserAutomation:
     def __init__(self, session_id):
         self.session_id = session_id
-        self.queue = janus.Queue()
         self.last_screenshot_hash = None
         self.screenshot_debounce_timer = None
         self.browser = None
         self.page = None
-        self.async_queue = asyncio.Queue()
-        self.command_list = [{}]
         self.ready = False
         self.running = False
         self.isViewed = False
@@ -52,51 +47,10 @@ class BrowserAutomation:
                 json={"image_data": base64_encoded_image}
             )
 
-
-    # Asynchronous method to add commands to the queue
-    async def add_command_async(self, command_json):
-        future = asyncio.Future()
-        await self.queue.async_q.put((command_json, future))
-        # await self.send_screenshot()
-        return future
-
-    async def add_cache_command_async(self, command_json):
-        await self.queue.async_q.put((command_json, None))
-
     ### Processes Commands ###
     async def process_commands(self):
+        #infinite loop so that it doesn't close
         while True:
-            command_data = await self.queue.async_q.get()
-            if command_data is None:
-                break
-
-            command_json, future = command_data
-
-            try:
-                # Parse the command and its parameters from JSON
-                command_name = command_json.get("command")
-                parameters = command_json.get("parameters", {})
-
-                if command_name == "navigate":
-                    command_future = await self.navigate(parameters)
-                elif command_name == "search":
-                    command_future = await self.search(parameters)
-                elif command_name == "click":
-                    command_future = await self.click(parameters)
-                elif command_name == "press":
-                    command_future = await self.press(parameters)
-                elif command_name == "fill_out_form":
-                    command_future = await self.fill_out_form(parameters)
-
-                try:
-                    result = await command_future
-                    future.set_result(result)
-                except Exception as e:
-                    print(f"Error executing command {command_name}: {str(e)}")
-
-            except json.JSONDecodeError:
-                print("Invalid command format. Please use JSON format.")
-
             await asyncio.sleep(0.1)
 
     async def navigate_cache(self, link):

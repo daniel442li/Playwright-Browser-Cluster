@@ -9,7 +9,6 @@ from typing import Dict
 import logging
 import asyncio
 from heartbeat import check_sessions
-from gpt_commands_new import ai_command
 from browser import BrowserAutomation
 import json
 import base64
