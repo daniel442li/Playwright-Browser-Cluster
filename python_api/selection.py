@@ -1,12 +1,9 @@
 from openai import OpenAI
-
-client = OpenAI()
 import json
-
 from dotenv import load_dotenv, find_dotenv
-import json
 
 load_dotenv(find_dotenv())
+client = OpenAI()
 
 model = "gpt-4-1106-preview"
 

@@ -45,9 +45,9 @@ class CreateSessionResponse(BaseModel):
     session_id: str
 
 
-class CommandRequest(BaseModel):
+class CommandRequestNavigate(BaseModel):
     session_id: str
-    command: str
+    link: str
 
 
 class CommandResponse(BaseModel):
@@ -187,21 +187,49 @@ async def create_session(create_session_request: CreateSessionRequest):
     return {"session_id": session_id}
 
 
-@app.post("/send_command", response_model=CommandResponse)
-async def send_command(command_request: CommandRequest):
-    session_id = command_request.session_id
-    command_text = command_request.command
+@app.post("/send_command_navigate", response_model=CommandResponse)
+async def send_command_navigate(command_request_navigate: CommandRequestNavigate):
+    session_id = command_request_navigate.session_id
+    link = command_request_navigate.link
 
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Invalid session ID")
 
     browser = sessions[session_id]
 
-    command = ai_command(command_text.upper())
+    try:
+        future = await browser.navigate(link)
+
+        result = await future
+
+        result = json.loads(result)
+
+        await browser.send_screenshot()
+
+        action = result.get("command")
+        parameters = result.get("parameters", [])
+
+        await asyncio.sleep(1)
+        await browser.send_screenshot()
+
+        # Return the result in the response
+        return {
+            "status": "Command executed",
+            "action": action,
+            "parameters": parameters,
+        }
+    except Exception as e:
+        # Handle exceptions (e.g., command failures, timeouts)
+        return {"status": "Error", "message": str(e)}
+
+    # command = ai_command(command_text.upper())
+
+    # {'command': 'navigate', 'parameters': {'link': 'https://google.com'}}
 
     try:
         # Add the command to the browser session and get the future
         future = await browser.add_command_async(command)
+        
 
         # Await the future to get the result of the command
         result = await future

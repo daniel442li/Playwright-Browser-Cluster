@@ -331,3 +331,6 @@ def test():
 
 
 # test()
+
+
+print(ai_command("navigate to google"))

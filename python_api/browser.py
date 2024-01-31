@@ -200,18 +200,26 @@ class BrowserAutomation:
         # Return the future immediately
         return future
 
-    async def navigate(self, parameters):
+    async def navigate(self, passedLink):
         future = asyncio.Future()
 
         async def load_page():
             try:
-                link = parameters.get("link")
-                if "." not in link:
-                    link += ".com"
+                link = passedLink
+                
+                if not re.match(r'^[a-zA-Z]+://', link):
+                    link = 'https://' + link
+                
+                if not re.match(r'^https?://www\.', link):
+                    link = link.replace('https://', 'https://www.', 1)
+
+                if not re.search(r'\.[a-zA-Z]{2,4}/?$', link):
+                    # If not, append '.com'
+                    link += '.com'
 
                 await self.page.goto(link)
 
-                cached_command = {"command": "navigate_cache", "parameters": [link]}
+                cached_command = {"command": "Cache_Navigate", "parameters": [link]}
                 future.set_result(json.dumps(cached_command))
 
             except Exception as e:
