@@ -229,15 +229,14 @@ class BrowserAutomation:
         # Return the future immediately
         return future
 
-    async def click(self, parameters):
+    async def click(self, description):
         future = asyncio.Future()
 
         async def perform_click():
             try:
-                selector = parameters.get("selector")
                 elements, choices, multi_choice = await get_multi_inputs(self.page)
 
-                selection = await answer_multiple_choice(selector, multi_choice)
+                selection = await answer_multiple_choice(description, multi_choice)
 
                 element_id = await self._get_index_from_option_name(selection)
 
