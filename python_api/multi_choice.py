@@ -17,21 +17,34 @@ def generate_option_name(index):
 def format_options(choices):
     option_text = ""
     abcd = ""
-    non_abcd = ""
 
     multi_choice = ""
     for multichoice_idx, choice in enumerate(choices):
         multi_choice += f"{generate_option_name(multichoice_idx)}. {choice[1]}\n"
         abcd += f"{generate_option_name(multichoice_idx)}, "
 
-        non_abcd = generate_option_name(multichoice_idx + 1)
-
-    multi_choice += f"{non_abcd}. None of the other options match the correct element"
-    # option_text += abcd
-    option_text += f"If none of these elements match your target element, please select {non_abcd}. None of the other options match the correct element.\n"
-
     option_text += multi_choice + "\n\n"
     return option_text
+
+
+
+# def format_options(choices):
+#     option_text = ""
+#     abcd = ""
+#     non_abcd = ""
+
+#     multi_choice = ""
+#     for multichoice_idx, choice in enumerate(choices):
+#         multi_choice += f"{generate_option_name(multichoice_idx)}. {choice[1]}\n"
+#         abcd += f"{generate_option_name(multichoice_idx)}, "
+
+
+#     multi_choice += f"{non_abcd}. None of the other options match the correct element"
+#     # option_text += abcd
+#     option_text += f"If none of these elements match your target element, please select {non_abcd}. None of the other options match the correct element.\n"
+
+#     option_text += multi_choice + "\n\n"
+#     return option_text
 
 
 def format_choices(elements, candidate_ids):

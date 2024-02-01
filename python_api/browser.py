@@ -304,8 +304,6 @@ class BrowserAutomation:
 
             await stealth_async(self.page)
 
-            
-
             # Sends screenshot to the browser
             # await self.page.add_init_script(observe_dom_script)
             await self.page.goto("https://google.com/")
