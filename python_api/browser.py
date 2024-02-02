@@ -190,7 +190,7 @@ class BrowserAutomation:
                 await self.page.context.add_cookies(self.cookies)
 
                 await self.page.goto(link)
-
+                
                 cached_command = {"command": "cache_navigate", "parameters": [link]}
                 future.set_result(json.dumps(cached_command))
 
@@ -274,20 +274,21 @@ class BrowserAutomation:
                 multi_choice
             )
 
+            count = 1
             for input in selection:
                 try:
                     answer = input["answer"]
                     element_id = await self._get_index_from_option_name(answer)
                     target_element = elements[int(choices[element_id][0])]
-                    parent_node = target_element[1]
+                    #parent_node = target_element[1]
                     
                     selector = target_element[-2]
 
                     await selector.clear(timeout=10000)
-                    await selector.fill("Default", timeout=10000)
+                    await selector.fill("[FILL FORM #" + str(count) + " HERE]", timeout=10000)
 
-                    pattern = r"parent_node: ([\w\s]+) name="
-                    parent_node_text = re.search(pattern, parent_node).group(1) if re.search(pattern, parent_node) else None
+                    #pattern = r"parent_node: ([\w\s]+) name="
+                    #parent_node_text = re.search(pattern, parent_node).group(1) if re.search(pattern, parent_node) else None
 
                     frame_url_pattern = r"url='(.*?)'"
                     frame_url_match = re.search(frame_url_pattern, str(selector))
@@ -300,7 +301,8 @@ class BrowserAutomation:
                     selector_match = re.search(selector_pattern, str(selector))
                     selector = selector_match.group(1) if selector_match else None
 
-                    gen_parameters.append([frame_url, selector, parent_node_text, "Default"])
+                    gen_parameters.append([frame_url, selector, "Form #" + str(count), "Default"])
+                    count += 1
                 except Exception as e:
                     print(e)
                     pass
@@ -333,8 +335,6 @@ class BrowserAutomation:
             await self.page.close()
         if self.browser is not None:
             await self.browser.close()
-        if self.queue is not None:
-            await self.queue.async_q.put(None)  # To stop the command processing loop
 
     
     async def set_ready(self):
