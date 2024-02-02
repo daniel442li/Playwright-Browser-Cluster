@@ -6,7 +6,7 @@ load_dotenv(find_dotenv())
 client = OpenAI()
 
 model = "gpt-4-1106-preview"
-
+image_model = ''
 main_schema_reasoning = {
     "type": "object",
     "properties": {
@@ -46,8 +46,12 @@ answer_all = {
                         "type": "string",
                         "description": "The answer to the multiple choice QA. Should be in format 'A', 'B', 'AC', etc",
                     },
+                    "label": {
+                        "type": "string",
+                        "description": "After picking your answer, pick a label based on the parent node / the text around the element. Should be like 'Company Name', 'Last Name', etc. Look at the text in the multiple choice they are ordered.",
+                    }
                 },
-                "required": ["answer"],
+                "required": ["answer", "label"],
             },
         }
     },
@@ -66,8 +70,14 @@ async def answer_multiple_choice(problem, quiz):
             },
             {
                 "role": "user",
-                "content": "You are imitating humans doing web navigation for a task. You will be passed a multiple choice QA of options to select and an instruction from the user. The multiple choices are ordered row-wise from left to right. After it hits the right border it goes from top to bottom. Identify the correct element based on its attributes and purpose, regardless of syntax correctness. Choose the correct answer for  "
-                + "\n"
+                "content": (
+                    "You are imitating humans doing web navigation for a task. "
+                    "You will be passed a multiple choice QA of options to select and an instruction from the user. "
+                    "The multiple choices are ordered row-wise from left to right. "
+                    "After it hits the right border it goes from top to bottom. "
+                    "Identify the correct element based on its attributes and purpose, regardless of syntax correctness. "
+                    "Choose the correct answer for "
+                ) + "\n"
                 + str(problem)
                 + "\n"
                 + "###"
@@ -91,22 +101,27 @@ async def answer_multiple_choice(problem, quiz):
     return main_json["answer"]
 
 
-async def answer_multiple_choice_forms(problem, quiz):
-    print(problem)
+async def answer_multiple_choice_forms(quiz):
     print(quiz)
     completion = client.chat.completions.create(
         model=model,
         messages=[
             {
                 "role": "system",
-                "content": "You are an expert web navigator that imitates a human",
+                "content": "You are an expert form filler who fills forms in a web browser.",
             },
             {
                 "role": "user",
-                "content": "You are imitating humans doing web navigation for a task. You will be passed a multiple choice QA of options to select and an instruction from the user. Identify the correct elements of inputs that coorespond to a form based on its attributes and purpose, regardless of syntax correctness. Choose the correct answer for  "
-                + "\n"
-                + str(problem)
-                + "\n"
+                "content": (
+                    "You are an expert form filler who fills forms in a web browser."
+                    "You will be passed a multiple choice QA of HTML and an instruction from the user."
+                    "You want to fill out all the forms on the website. You will find all form elements to fill regardless of syntax correctness."
+                    "The multiple choices are ordered row-wise from left to right. "
+                    "After it hits the right border it goes from top to bottom. "
+                    "You will only select elemenets that are form elements. These include inputs, textareas, comboboxes, etc."
+                    "Do not select submit buttons or other non-form elements."
+                    "You should seperate each answer choice into a seperate array element. The final answer should look something like this: ['A', 'F', 'K'], etc."
+                ) + "\n"
                 + "###"
                 + "Multiple Choice QA: \n"
                 + str(quiz),

@@ -173,19 +173,6 @@ def initialize_browser_session(session_id):
 
     # Run the startup script in a separate asyncio task
     asyncio.create_task(automation.start())
-
-    # cookies = [{
-    #     'name': 'li_at',
-    #     'value': 'AQEDAStP9dYDmAa8AAABjQQs-DsAAAGNKDl8O04AtTnN10CX0bDxvPgQPWSD2YF7CIFVBbe5VfggjPe8z6rH7xcAHpi_XPSwLFhWa4BQlMy86Hw6Rlt0Dce5mc11WWGMZJpoIj_xcwTR7kFQJYYP_yI3',
-    #     'domain': 'www.linkedin.com',
-    #     'path': '/',
-    #     # You can add other properties like 'expires', 'httpOnly', etc.
-    # }]
-
-    # initial_commands = [
-    # "await context.add_cookies(" + str(cookies) + ")"
-    # ]
-
     return automation
 
 
@@ -200,13 +187,6 @@ async def create_session(create_session_request: CreateSessionRequest):
     return {"session_id": session_id}
 
 
-def send_screenshot_async(browser):
-    asyncio.create_task(browser.send_screenshot())
-    asyncio.sleep(0.5)
-    asyncio.create_task(browser.send_screenshot())
-    asyncio.sleep(1)
-    asyncio.create_task(browser.send_screenshot())
-
 @app.post("/send_command_navigate", response_model=CommandResponse)
 async def send_command_navigate(command_request_navigate: CommandRequestNavigate):
     session_id = command_request_navigate.session_id
@@ -217,8 +197,6 @@ async def send_command_navigate(command_request_navigate: CommandRequestNavigate
         raise HTTPException(status_code=404, detail="Invalid session ID")
 
     browser = sessions[session_id]
-
-    
 
     if cookie is not None:
         for c in cookie:
@@ -234,8 +212,6 @@ async def send_command_navigate(command_request_navigate: CommandRequestNavigate
 
         action = result.get("command")
         parameters = result.get("parameters", [])
-
-        asyncio.create_task(send_screenshot_async(browser))
 
         # Return the result in the response
         return {
@@ -269,9 +245,6 @@ async def send_command_press(command_request_press: CommandRequestPress):
         action = result.get("command")
         parameters = result.get("parameters", [])
 
-        await asyncio.sleep(0.5)
-        await browser.send_screenshot()
-
         # Return the result in the response
         return {
             "status": "Command executed",
@@ -303,9 +276,6 @@ async def send_command_search(command_request_search: CommandRequestSearch):
 
         action = result.get("command")
         parameters = result.get("parameters", [])
-
-        await asyncio.sleep(0.5)
-        await browser.send_screenshot()
 
         # Return the result in the response
         return {
@@ -362,8 +332,6 @@ async def send_command_click(command_request_search: CommandRequestClick):
         action = result.get("command")
         parameters = result.get("parameters", [])
 
-        await asyncio.sleep(0.5)
-        await browser.send_screenshot()
 
         # Return the result in the response
         return {
@@ -389,9 +357,6 @@ async def send_cached_click(command_cache_search: CacheRequest):
     try:
         await browser.click_cache(parameters[0], parameters[1])
         # Return the result in the response
-        await asyncio.sleep(0.5)
-        await browser.send_screenshot()
-
         return {"status": "Cached command executed"}
 
     except Exception as e:
@@ -418,10 +383,7 @@ async def send_fill_forms(fill_forms: FillForms):
 
         action = result.get("command")
         parameters = result.get("parameters", [])
-
-        await asyncio.sleep(0.5)
-        await browser.send_screenshot()
-
+        
         # Return the result in the response
         return {
             "status": "Command executed",
@@ -446,9 +408,6 @@ async def send_cached_fill_forms(command_cache_search: CacheRequest):
     try:
         await browser.fill_out_form_cache(parameters)
         # Return the result in the response
-        await asyncio.sleep(0.5)
-        await browser.send_screenshot()
-
         return {"status": "Cached command executed"}
 
     except Exception as e:

@@ -52,11 +52,23 @@ class BrowserAutomation:
                 json={"image_data": base64_encoded_image}
             )
 
+
     ### Processes Commands ###
-    async def process_commands(self):
+    async def image_loop(self):
         #infinite loop so that it doesn't close
+        base64_encoded_image = ""
         while True:
-            await asyncio.sleep(0.1)
+            screenshot_data = await self.page.screenshot(full_page=True)
+            taken_image = base64.b64encode(screenshot_data).decode('utf-8')
+            if taken_image != base64_encoded_image:
+                base64_encoded_image = taken_image
+                async with httpx.AsyncClient() as client:
+                    await client.post(
+                        f"http://localhost:8000/receive_image/{self.session_id}",
+                        json={"image_data": base64_encoded_image}
+                    )
+            await asyncio.sleep(0.5)
+
 
     async def navigate_cache(self, link):
         if "." not in link:
@@ -259,7 +271,7 @@ class BrowserAutomation:
 
 
             selection = await answer_multiple_choice_forms(
-                "All form elements", multi_choice
+                multi_choice
             )
 
             for input in selection:
@@ -305,67 +317,16 @@ class BrowserAutomation:
         return future
 
     async def start(self):
-        print("Starting...")
         async with async_playwright() as p:
-            self.browser = await p.chromium.launch(headless=False)
+            #self.browser = await p.chromium.launch(headless=False)
+            self.browser = await p.chromium.launch()
             self.page = await self.browser.new_page()
-
             await stealth_async(self.page)
-
-            # Sends screenshot to the browser
-            # await self.page.add_init_script(observe_dom_script)
             await self.page.goto("https://google.com/")
             await self.page.wait_for_load_state('load')
-            # await self.page.expose_function("_sendDomChange", self.send_dom_change)
 
-            # # Set up a mutation observer to listen to DOM changes
-            # await self.page.evaluate('''() => {
-            #     let debounceTimer;
-            #     let aggregatedChanges = [];
-
-            #     const debounce = (func, delay) => {
-            #         clearTimeout(debounceTimer);
-            #         debounceTimer = setTimeout(() => {
-            #             func(aggregatedChanges.join(''));
-            #             aggregatedChanges = []; // Reset the aggregated changes
-            #         }, delay);
-            #     };
-
-            #     var callback = function(mutationsList, observer) {
-            #         for(var mutation of mutationsList) {
-            #             if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-            #                 mutation.addedNodes.forEach(node => {
-            #                     if (node.outerHTML) {
-            #                         aggregatedChanges.push(node.outerHTML);
-            #                     }
-            #                 });
-            #             }
-            #             // Handle other types of mutations if necessary
-            #         }
-
-            #         debounce((htmlContent) => {
-            #             if(htmlContent) {
-            #                 console.log('Sending HTML content');
-            #                 window._sendDomChange(htmlContent);
-            #             }
-            #         }, 1000);  // Debounce delay
-            #     };
-
-            #     var observer = new MutationObserver(callback);
-            #     observer.observe(document.body, { childList: true, subtree: true });
-            # }''')
-
-            # time.sleep(5)
-            # await self.send_dom_change()
-
-            # Start processing commands
-
-            print("Ready!")
             await self.set_ready()
-
-            await self.send_screenshot()
-            await self.process_commands()
-            # Additional actions can be added here
+            await self.image_loop()
 
     async def close(self):
         if self.page is not None:

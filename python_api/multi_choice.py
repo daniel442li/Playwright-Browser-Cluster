@@ -249,7 +249,7 @@ async def get_element_data(element, tag_name):
 
 
 async def get_elements_with_playwright(page, type="default"):
-    if type == "input":
+    if type == "not using this for now":
         interactive_elements_selectors = [
             "button",
             "input",

@@ -114,7 +114,9 @@ class BrowserAutomation:
     async def start(self):
         print("Starting...")
         async with async_playwright() as p:
-            self.browser = await p.chromium.launch(headless=False)
+            #self.browser = await p.chromium.launch(headless=False)
+            self.browser = await p.chromium.launch()
+
             self.page = await self.browser.new_page()
 
             # Add cookies to the page instance
