@@ -22,6 +22,11 @@ class BrowserAutomation:
         self.ready = False
         self.running = False
         self.isViewed = False
+        self.cookies = []
+
+
+    async def add_cookie(self, cookie):
+        self.cookies.append(cookie)
 
     async def _get_index_from_option_name(self, name):
         if len(name) == 1:
@@ -168,6 +173,9 @@ class BrowserAutomation:
                 if not re.search(r'\.[a-zA-Z]{2,4}/?$', link):
                     # If not, append '.com'
                     link += '.com'
+                
+                
+                await self.page.context.add_cookies(self.cookies)
 
                 await self.page.goto(link)
 

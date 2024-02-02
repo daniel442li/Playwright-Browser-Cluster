@@ -3,7 +3,8 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
-
+from typing import Optional
+import ast
 from dotenv import load_dotenv, find_dotenv
 from typing import Dict
 import logging
@@ -46,6 +47,7 @@ class CreateSessionResponse(BaseModel):
 class CommandRequestNavigate(BaseModel):
     session_id: str
     link: str
+    cookie: Optional[list] = None 
 
 class CommandRequestSearch(BaseModel):
     session_id: str
@@ -198,15 +200,30 @@ async def create_session(create_session_request: CreateSessionRequest):
     return {"session_id": session_id}
 
 
+def send_screenshot_async(browser):
+    asyncio.create_task(browser.send_screenshot())
+    asyncio.sleep(0.5)
+    asyncio.create_task(browser.send_screenshot())
+    asyncio.sleep(1)
+    asyncio.create_task(browser.send_screenshot())
+
 @app.post("/send_command_navigate", response_model=CommandResponse)
 async def send_command_navigate(command_request_navigate: CommandRequestNavigate):
     session_id = command_request_navigate.session_id
     link = command_request_navigate.link
+    cookie = command_request_navigate.cookie
 
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Invalid session ID")
 
     browser = sessions[session_id]
+
+    
+
+    if cookie is not None:
+        for c in cookie:
+            c['sameSite'] = 'None'
+            await browser.add_cookie(c)
 
     try:
         future = await browser.navigate(link)
@@ -218,8 +235,7 @@ async def send_command_navigate(command_request_navigate: CommandRequestNavigate
         action = result.get("command")
         parameters = result.get("parameters", [])
 
-        await asyncio.sleep(0.5)
-        await browser.send_screenshot()
+        asyncio.create_task(send_screenshot_async(browser))
 
         # Return the result in the response
         return {
@@ -333,7 +349,7 @@ async def send_command_click(command_request_search: CommandRequestClick):
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Invalid session ID")
 
-    browser = sessions[session_id]
+    browser = sessions[session_id]        
 
     try:
         future = await browser.click(query)
