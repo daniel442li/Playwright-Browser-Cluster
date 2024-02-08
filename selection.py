@@ -7,6 +7,8 @@ client = OpenAI()
 
 model = "gpt-4-1106-preview"
 image_model = ''
+
+# This does nothing lol
 main_schema_reasoning = {
     "type": "object",
     "properties": {

@@ -4,3 +4,6 @@ node_modules/
 *.webm
 __pycache__/
 *.html
+__pycache__/
+venv/
+.env

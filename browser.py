@@ -10,7 +10,7 @@ import re
 from playwright_stealth import stealth_async
 import time
 import base64
-
+from datetime import datetime, timedelta
 
 class BrowserAutomation:
     def __init__(self, session_id):
@@ -23,6 +23,9 @@ class BrowserAutomation:
         self.running = False
         self.isViewed = False
         self.cookies = []
+        self.last_activity_time = datetime.now()
+        self.activity_timeout_seconds = 10 
+        self.is_active = True
 
 
     async def add_cookie(self, cookie):
@@ -38,44 +41,28 @@ class BrowserAutomation:
         else:
             raise Exception("The string should be either 1 or 2 characters long")
 
-    # async def send_screenshot(self):
-    #     # Capture a screenshot directly to memory
-    #     screenshot_data = await self.page.screenshot(full_page=True)
-
-    #     # Encode the binary data in Base64
-    #     base64_encoded_image = base64.b64encode(screenshot_data).decode('utf-8')
-
-    #     print("Sending screenshot in Base64 format")
-    #     async with httpx.AsyncClient() as client:
-    #         await client.post(
-    #             f"http://localhost:8000/receive_image/{self.session_id}",
-    #             json={"image_data": base64_encoded_image}
-    #         )
-
-
     ### Processes Commands ###
-    async def image_loop(self):
-        #infinite loop so that it doesn't close
-        base64_encoded_image = ""
+    async def activity_watchdog(self):
+        """Monitors for inactivity and closes the browser if the timeout is reached."""
         while True:
-            # screenshot_data = await self.page.screenshot(full_page=True)
-            # taken_image = base64.b64encode(screenshot_data).decode('utf-8')
-            # if taken_image != base64_encoded_image:
-            #     base64_encoded_image = taken_image
-            #     async with httpx.AsyncClient() as client:
-            #         await client.post(
-            #             f"http://localhost:8000/receive_image/{self.session_id}",
-            #             json={"image_data": base64_encoded_image}
-            #         )
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(5)  # Check every 5 seconds
+            if datetime.now() - self.last_activity_time > timedelta(seconds=self.activity_timeout_seconds):
+                print("Inactivity timeout reached, closing browser.")
+                await self.close()
+                break  # Stop the watchdog after closing the browser
 
+    def update_activity_time(self):
+        """Resets the activity timer to the current time."""
+        self.last_activity_time = datetime.now()
 
     async def navigate_cache(self, link):
+        self.update_activity_time()
         if "." not in link:
             link += ".com"
         await self.page.goto(link)
 
     async def click_cache(self, frame, selector):
+        self.update_activity_time()
         my_frame = self.page.frame(url=frame)
         if my_frame:
             new_locator = my_frame.locator(selector)
@@ -85,9 +72,11 @@ class BrowserAutomation:
         await new_locator.evaluate("element => element.click()", timeout=10000)
 
     async def press_cache(self, key):
+        self.update_activity_time()
         await self.page.keyboard.press(key)
 
     async def search_cache(self, query, frame, selector, type_selector):
+        self.update_activity_time()
         my_frame = self.page.frame(url=frame)
         if my_frame:
             new_locator = my_frame.locator(selector)
@@ -104,6 +93,7 @@ class BrowserAutomation:
         await new_locator.press_sequentially(query, timeout=10000)
 
     async def fill_out_form_cache(self, parameters):
+        self.update_activity_time()
         for input in parameters:
             frame = input[0]
             selector = input[1]
@@ -119,6 +109,7 @@ class BrowserAutomation:
             await new_locator.fill(answer, timeout=10000)
 
     async def search(self, query):
+        self.update_activity_time()
         future = asyncio.Future()
 
         async def perform_search():
@@ -170,6 +161,7 @@ class BrowserAutomation:
         return future
 
     async def navigate(self, passedLink):
+        self.update_activity_time()
         future = asyncio.Future()
 
         async def load_page():
@@ -204,6 +196,7 @@ class BrowserAutomation:
         return future
 
     async def click(self, description):
+        self.update_activity_time()
         future = asyncio.Future()
 
         async def perform_click():
@@ -243,6 +236,7 @@ class BrowserAutomation:
         return future
 
     async def press(self, key):
+        self.update_activity_time()
         future = asyncio.Future()
 
         async def perform_press():
@@ -260,6 +254,7 @@ class BrowserAutomation:
         return future
 
     async def fill_out_form(self):
+        self.update_activity_time()
         future = asyncio.Future()
 
         async def perform_form_fill():
@@ -328,9 +323,10 @@ class BrowserAutomation:
             await self.page.wait_for_load_state('load')
 
             await self.set_ready()
-            await self.image_loop()
+            await self.activity_watchdog()
 
     async def close(self):
+        self.is_active = False
         if self.page is not None:
             await self.page.close()
         if self.browser is not None:

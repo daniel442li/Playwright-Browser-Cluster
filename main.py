@@ -1,10 +1,8 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 from typing import Optional
-import ast
 from dotenv import load_dotenv, find_dotenv
 from typing import Dict
 import logging
@@ -15,8 +13,6 @@ import json
 import base64
 
 load_dotenv(find_dotenv())
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 @asynccontextmanager
@@ -31,7 +27,7 @@ app = FastAPI(lifespan=lifespan)
 
 # Step 2: Setup the logging configuration
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -119,37 +115,6 @@ app.add_middleware(
 
 # Dictionary to store session data
 sessions: Dict[str, BrowserAutomation] = {}
-binary_image_data: Dict[str, bytes] = {}
-
-class ImageData(BaseModel):
-    image_data: str
-
-@app.post("/receive_image/{session_id}")
-async def receive_image(session_id: str, image_data: ImageData):
-    try:
-        content = base64.b64decode(image_data.image_data)
-        binary_image_data[session_id] = content
-        return {"message": "Image received"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail="Invalid image data")
-
-
-@app.get("/stream_image/{session_id}")
-async def stream_image(session_id: str):
-    if session_id not in binary_image_data:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    image_data = binary_image_data[session_id]
-    base64_encoded_data = base64.b64encode(image_data).decode('utf-8')
-
-    # Function to generate the data to be streamed
-    def file_generator():
-        yield f"data: {base64_encoded_data}\n\n"
-        # Remove the image data from dictionary after sending it
-        #del binary_image_data[session_id]
-
-    return StreamingResponse(file_generator(), media_type="text/event-stream")
-
 
 @app.post("/terminate_session", response_model=TerminateSessionResponse)
 async def terminate_session(terminate_session_request: TerminateSessionRequest):
@@ -429,7 +394,17 @@ async def session_ready(session_id: str):
 
 
     return {"ready": browser.ready}
-    
+
+
+@app.post("/update_activity_time")
+async def update_activity_time(session_id: str):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session ID not found")
+
+    browser = sessions[session_id]
+    browser.update_activity_time()
+    return {"status": "Activity time updated"}
+
 
 
 @app.get("/")
@@ -437,4 +412,4 @@ def read_root():
     return {"Welcome to our API :-)"}
 
 
-# uvicorn main:app --reload
+# uvicorn main:app 
