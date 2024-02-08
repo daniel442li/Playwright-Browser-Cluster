@@ -9,16 +9,15 @@ import logging
 import asyncio
 from browser import BrowserAutomation
 import json
-import aioredis
 
 load_dotenv(find_dotenv())
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.redis = await aioredis.create_redis_pool("redis://localhost", minsize=10, maxsize=20)
+    # Before API starts
     yield
-    await app.state.redis.close()
+    # After exiting the context manager, do some cleanup
 
 
 app = FastAPI(lifespan=lifespan)

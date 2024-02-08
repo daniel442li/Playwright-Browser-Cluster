@@ -8,8 +8,6 @@ from selection import answer_multiple_choice
 from selection import answer_multiple_choice_forms
 import re
 from playwright_stealth import stealth_async
-import time
-import base64
 from datetime import datetime, timedelta
 
 class BrowserAutomation:
@@ -24,7 +22,7 @@ class BrowserAutomation:
         self.isViewed = False
         self.cookies = []
         self.last_activity_time = datetime.now()
-        self.activity_timeout_seconds = 10 
+        self.activity_timeout_seconds = 1000000 
         self.is_active = True
 
 
@@ -315,12 +313,23 @@ class BrowserAutomation:
 
     async def start(self):
         async with async_playwright() as p:
-            self.browser = await p.chromium.launch(headless=False)
+            self.browser = await p.chromium.launch(
+            headless=False,
+            args=['--auto-select-tab-capture-source-by-title="Google"']
+            )
             #self.browser = await p.chromium.launch()
-            self.page = await self.browser.new_page()
+            self.context = await self.browser.new_context()
+            
+            self.page = await self.context.new_page()
             await stealth_async(self.page)
+
             await self.page.goto("https://google.com/")
             await self.page.wait_for_load_state('load')
+            
+            recorder_page = await self.context.new_page()
+            await recorder_page.goto("file:///Users/daniel-li/Code/browser-backend/index.html")
+            await recorder_page.wait_for_timeout(30000)
+            
 
             await self.set_ready()
             await self.activity_watchdog()
