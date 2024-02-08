@@ -143,6 +143,17 @@ async def create_session(create_session_request: CreateSessionRequest):
 
     if session_id in sessions:
         raise HTTPException(status_code=409, detail="Session ID already exists")
+    
+    # if session_id in sessions:
+    #     browser = sessions[session_id]
+
+    #     if browser.ready:
+    #         raise HTTPException(status_code=409, detail="Session ID already exists")
+    #     else:
+    #         asyncio.create_task(browser.start())
+    # else:
+    #     browser = initialize_browser_session(session_id)
+    #     sessions[session_id] = browser
     browser = initialize_browser_session(session_id)
     sessions[session_id] = browser
     return {"session_id": session_id}
@@ -392,7 +403,7 @@ async def session_ready(session_id: str):
     return {"ready": browser.ready}
 
 
-@app.post("/update_activity_time")
+@app.post("/update_activity_time/{session_id}")
 async def update_activity_time(session_id: str):
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session ID not found")

@@ -22,7 +22,7 @@ class BrowserAutomation:
         self.isViewed = False
         self.cookies = []
         self.last_activity_time = datetime.now()
-        self.activity_timeout_seconds = 1000000 
+        self.activity_timeout_seconds = 60 
         self.is_active = True
 
 
@@ -327,16 +327,15 @@ class BrowserAutomation:
             await self.page.wait_for_load_state('load')
             
             recorder_page = await self.context.new_page()
-            await recorder_page.goto("file:///C:/Users/daniel/Workman-Backend/index.html")
+            await recorder_page.goto("file:///Users/daniel-li/Code/browser-backend/index.html")            
 
-            await recorder_page.wait_for_timeout(30000)
-            
-
-            await self.set_ready()
+            self.ready = True
+            self.is_active = True
             await self.activity_watchdog()
 
     async def close(self):
         self.is_active = False
+        self.ready = False
         if self.page is not None:
             await self.page.close()
         if self.browser is not None:
