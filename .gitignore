@@ -3,7 +3,5 @@ node_modules/
 *.png
 *.webm
 __pycache__/
-*.html
-__pycache__/
 venv/
 .env
