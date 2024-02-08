@@ -314,8 +314,8 @@ class BrowserAutomation:
     async def start(self):
         async with async_playwright() as p:
             self.browser = await p.chromium.launch(
-            headless=False,
-            args=['--auto-select-tab-capture-source-by-title="Google"']
+                headless=False,
+                args=['--auto-select-tab-capture-source-by-title=Google']
             )
             #self.browser = await p.chromium.launch()
             self.context = await self.browser.new_context()
@@ -327,7 +327,8 @@ class BrowserAutomation:
             await self.page.wait_for_load_state('load')
             
             recorder_page = await self.context.new_page()
-            await recorder_page.goto("file:///Users/daniel-li/Code/browser-backend/index.html")
+            await recorder_page.goto("file:///C:/Users/daniel/Workman-Backend/index.html")
+
             await recorder_page.wait_for_timeout(30000)
             
 
