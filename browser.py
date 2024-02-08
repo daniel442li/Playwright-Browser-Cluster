@@ -38,19 +38,19 @@ class BrowserAutomation:
         else:
             raise Exception("The string should be either 1 or 2 characters long")
 
-    async def send_screenshot(self):
-        # Capture a screenshot directly to memory
-        screenshot_data = await self.page.screenshot(full_page=True)
+    # async def send_screenshot(self):
+    #     # Capture a screenshot directly to memory
+    #     screenshot_data = await self.page.screenshot(full_page=True)
 
-        # Encode the binary data in Base64
-        base64_encoded_image = base64.b64encode(screenshot_data).decode('utf-8')
+    #     # Encode the binary data in Base64
+    #     base64_encoded_image = base64.b64encode(screenshot_data).decode('utf-8')
 
-        print("Sending screenshot in Base64 format")
-        async with httpx.AsyncClient() as client:
-            await client.post(
-                f"http://localhost:8000/receive_image/{self.session_id}",
-                json={"image_data": base64_encoded_image}
-            )
+    #     print("Sending screenshot in Base64 format")
+    #     async with httpx.AsyncClient() as client:
+    #         await client.post(
+    #             f"http://localhost:8000/receive_image/{self.session_id}",
+    #             json={"image_data": base64_encoded_image}
+    #         )
 
 
     ### Processes Commands ###
@@ -58,15 +58,15 @@ class BrowserAutomation:
         #infinite loop so that it doesn't close
         base64_encoded_image = ""
         while True:
-            screenshot_data = await self.page.screenshot(full_page=True)
-            taken_image = base64.b64encode(screenshot_data).decode('utf-8')
-            if taken_image != base64_encoded_image:
-                base64_encoded_image = taken_image
-                async with httpx.AsyncClient() as client:
-                    await client.post(
-                        f"http://localhost:8000/receive_image/{self.session_id}",
-                        json={"image_data": base64_encoded_image}
-                    )
+            # screenshot_data = await self.page.screenshot(full_page=True)
+            # taken_image = base64.b64encode(screenshot_data).decode('utf-8')
+            # if taken_image != base64_encoded_image:
+            #     base64_encoded_image = taken_image
+            #     async with httpx.AsyncClient() as client:
+            #         await client.post(
+            #             f"http://localhost:8000/receive_image/{self.session_id}",
+            #             json={"image_data": base64_encoded_image}
+            #         )
             await asyncio.sleep(0.5)
 
 
@@ -320,8 +320,8 @@ class BrowserAutomation:
 
     async def start(self):
         async with async_playwright() as p:
-            #self.browser = await p.chromium.launch(headless=False)
-            self.browser = await p.chromium.launch()
+            self.browser = await p.chromium.launch(headless=False)
+            #self.browser = await p.chromium.launch()
             self.page = await self.browser.new_page()
             await stealth_async(self.page)
             await self.page.goto("https://google.com/")

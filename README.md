@@ -1,5 +1,8 @@
 Playwright API for Automated Browser Interaction.
 
+To run the API:
+Run uvicorn main:app
+
 
 Research Papers:
 https://github.com/OSU-NLP-Group/SeeAct
