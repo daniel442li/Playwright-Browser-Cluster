@@ -9,6 +9,12 @@ from selection import answer_multiple_choice_forms
 import re
 from playwright_stealth import stealth_async
 from datetime import datetime, timedelta
+from dotenv import load_dotenv, find_dotenv
+import os 
+
+load_dotenv(find_dotenv())
+
+html_path = os.getenv('HTML_PATH')
 
 class BrowserAutomation:
     def __init__(self, session_id):
@@ -327,7 +333,8 @@ class BrowserAutomation:
             await self.page.wait_for_load_state('load')
             
             recorder_page = await self.context.new_page()
-            await recorder_page.goto("file:///Users/daniel-li/Code/browser-backend/index.html")            
+            await recorder_page.goto(html_path + self.session_id)
+            
 
             self.ready = True
             self.is_active = True

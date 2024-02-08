@@ -8,22 +8,6 @@ client = OpenAI()
 model = "gpt-4-1106-preview"
 image_model = ''
 
-# This does nothing lol
-main_schema_reasoning = {
-    "type": "object",
-    "properties": {
-        "answer": {
-            "type": "string",
-            "description": "The answer to the multiple choice QA. Should be in format 'A', 'B', 'AC', etc'",
-        },
-        "reasoning": {
-            "type": "string",
-            "description": "Why you choose the answer you did.",
-        },
-    },
-    "required": ["answer", "reasoning"],
-}
-
 main_schema = {
     "type": "object",
     "properties": {
