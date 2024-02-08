@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
@@ -7,20 +7,18 @@ from dotenv import load_dotenv, find_dotenv
 from typing import Dict
 import logging
 import asyncio
-from heartbeat import check_sessions
 from browser import BrowserAutomation
 import json
-import base64
+import aioredis
 
 load_dotenv(find_dotenv())
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Before API starts
-    asyncio.create_task(check_sessions(sessions))
+    app.state.redis = await aioredis.create_redis_pool("redis://localhost", minsize=10, maxsize=20)
     yield
-    # After exiting the context manager, do some cleanup
+    await app.state.redis.close()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -127,7 +125,6 @@ async def terminate_session(terminate_session_request: TerminateSessionRequest):
     await browser.close()
 
     del sessions[session_id]
-    del binary_image_data[session_id]
 
     return {"message": "Session terminated successfully"}
 
