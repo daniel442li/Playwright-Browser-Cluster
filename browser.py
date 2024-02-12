@@ -28,7 +28,7 @@ class BrowserAutomation:
         self.isViewed = False
         self.cookies = []
         self.last_activity_time = datetime.now()
-        self.activity_timeout_seconds = 60 
+        self.activity_timeout_seconds = 6000
         self.is_active = True
 
 
@@ -172,18 +172,15 @@ class BrowserAutomation:
             try:
                 link = passedLink
                 
-                if not re.match(r'^[a-zA-Z]+://', link):
-                    link = 'https://' + link
+                # if not re.match(r'^[a-zA-Z]+://', link):
+                #     link = 'https://' + link
                 
-                if not re.match(r'^https?://www\.', link):
-                    link = link.replace('https://', 'https://www.', 1)
-
-                if not re.search(r'\.[a-zA-Z]{2,4}/?$', link):
-                    # If not, append '.com'
-                    link += '.com'
-                
+                # if not re.match(r'^https?://www\.', link):
+                #     link = link.replace('https://', 'https://www.', 1)
                 
                 await self.page.context.add_cookies(self.cookies)
+
+                print(self.cookies)
 
                 await self.page.goto(link)
                 
@@ -277,6 +274,7 @@ class BrowserAutomation:
             for input in selection:
                 try:
                     answer = input["answer"]
+                    label = input["label"]
                     element_id = await self._get_index_from_option_name(answer)
                     target_element = elements[int(choices[element_id][0])]
                     #parent_node = target_element[1]
@@ -284,7 +282,9 @@ class BrowserAutomation:
                     selector = target_element[-2]
 
                     await selector.clear(timeout=10000)
-                    await selector.fill("[FILL FORM #" + str(count) + " HERE]", timeout=10000)
+                    #await selector.fill("[FILL FORM #" + str(count) + " HERE]", timeout=10000)
+
+                    await selector.fill(str(label) + " Input]", timeout=10000)
 
                     #pattern = r"parent_node: ([\w\s]+) name="
                     #parent_node_text = re.search(pattern, parent_node).group(1) if re.search(pattern, parent_node) else None
@@ -300,7 +300,9 @@ class BrowserAutomation:
                     selector_match = re.search(selector_pattern, str(selector))
                     selector = selector_match.group(1) if selector_match else None
 
-                    gen_parameters.append([frame_url, selector, "Form #" + str(count), "Default"])
+                    #gen_parameters.append([frame_url, selector, "Form #" + str(count), "Default"])
+
+                    gen_parameters.append([frame_url, selector, label, "Default"])
                     count += 1
                 except Exception as e:
                     print(e)
