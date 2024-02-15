@@ -67,13 +67,27 @@ class BrowserAutomation:
 
     async def click_cache(self, frame, selector):
         self.update_activity_time()
-        my_frame = self.page.frame(url=frame)
-        if my_frame:
-            new_locator = my_frame.locator(selector)
-        else:
-            new_locator = self.page.locator(selector)
+        #await self.page.get_by_role("button", name="Add Transaction").check()
+        print(frame)
+        print(selector)
+        # await self.page.get_by_role("button", name=re.compile("Save", re.IGNORECASE)).click()
 
-        await new_locator.evaluate("element => element.click()", timeout=10000)
+        try:
+            # locator = self.page.get_by_role("button", name=re.compile("Save", re.IGNORECASE))
+            locator = self.page.get_by_role(selector, name=re.compile(frame, re.IGNORECASE)).first
+            await locator.hover()
+            await locator.click()
+
+        except Exception as e:
+            print(f"Error: {e}")
+
+        # my_frame = self.page.frame(url=frame)
+        # if my_frame:
+        #     new_locator = my_frame.locator(selector)
+        # else:
+        #     new_locator = self.page.locator(selector)
+
+        # await new_locator.evaluate("element => element.click()", timeout=10000)
 
     async def press_cache(self, key):
         self.update_activity_time()
@@ -209,7 +223,23 @@ class BrowserAutomation:
                 element_id = await self._get_index_from_option_name(selection)
 
                 target_element = elements[int(choices[element_id][0])]
+
+                print(target_element)
                 selector = target_element[-2]
+
+                print(selector)
+
+                button_text = target_element[1]
+                print(button_text)
+
+                type_selector = target_element[2]
+                type_selector_pattern = r'type="([^"]*)"'
+                type_selector_match = re.search(type_selector_pattern, str(type_selector))
+                type_selector_parsed = type_selector_match.group(1) if type_selector_match else None
+
+                print(type_selector_parsed)
+
+
 
                 await selector.evaluate("element => element.click()", timeout=10000)
 
@@ -222,9 +252,15 @@ class BrowserAutomation:
                 selector_match = re.search(selector_pattern, str(selector))
                 selector = selector_match.group(1) if selector_match else None
 
+                # cached_command = {
+                #     "command": "click_cache",
+                #     "parameters": [frame_url, selector],
+                # }
+
                 cached_command = {
                     "command": "click_cache",
-                    "parameters": [frame_url, selector],
+                    "parameters": [button_text, type_selector_parsed],
+
                 }
                 future.set_result(json.dumps(cached_command))
             except Exception as e:
@@ -273,18 +309,24 @@ class BrowserAutomation:
             count = 1
             for input in selection:
                 try:
+                    
                     answer = input["answer"]
                     label = input["label"]
+                    print(label)
                     element_id = await self._get_index_from_option_name(answer)
                     target_element = elements[int(choices[element_id][0])]
                     #parent_node = target_element[1]
+
+
                     
                     selector = target_element[-2]
 
-                    await selector.clear(timeout=10000)
+                    print(selector)
+
+                    await selector.clear(timeout=1000)
                     #await selector.fill("[FILL FORM #" + str(count) + " HERE]", timeout=10000)
 
-                    await selector.fill(str(label) + " Input]", timeout=10000)
+                    await selector.fill(str(label) + " Input", timeout=1000)
 
                     #pattern = r"parent_node: ([\w\s]+) name="
                     #parent_node_text = re.search(pattern, parent_node).group(1) if re.search(pattern, parent_node) else None
@@ -312,6 +354,7 @@ class BrowserAutomation:
                 "command": "fill_out_form_cache",
                 "parameters": gen_parameters,
             }
+            print("DONE")
             future.set_result(json.dumps(cached_command))
 
         asyncio.create_task(perform_form_fill())

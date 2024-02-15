@@ -301,6 +301,7 @@ async def get_elements_with_playwright(page, type="default"):
         element_count = await locator.count()
         for index in range(element_count):
             element = locator.nth(index)
+            print(element)
             tag_name = selector.replace(':not([tabindex="-1"])', "")
             tag_name = tag_name.replace(':not([contenteditable="false"])', "")
             task = get_element_data(element, tag_name)
