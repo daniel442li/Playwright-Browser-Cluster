@@ -19,6 +19,24 @@ main_schema = {
     "required": ["answer"],
 }
 
+
+main_schema_reasoning = {
+    "type": "object",
+    "properties": {
+        "answer": {
+            "type": "string",
+            "description": "The answer to the multiple choice QA. Should be in format 'A', 'B', 'AC', etc'",
+        },
+        "reasoning": {
+            "type": "string",
+            "description": "The reasoning behind your answer",
+        }
+    },
+    "required": ["answer", "reasoning"],
+}
+
+
+
 answer_all = {
     "type": "object",
     "properties": {
@@ -72,7 +90,7 @@ async def answer_multiple_choice(problem, quiz):
             },
         ],
         functions=[
-            {"name": "answer_multiple_choice", "parameters": main_schema}
+            {"name": "answer_multiple_choice", "parameters": main_schema_reasoning}
         ],
         function_call={"name": "answer_multiple_choice"},
         temperature=0,
@@ -83,6 +101,7 @@ async def answer_multiple_choice(problem, quiz):
     main_json = json.loads(main_json)
 
     print(main_json["answer"])
+    print(main_json["reasoning"])
 
     return main_json["answer"]
 

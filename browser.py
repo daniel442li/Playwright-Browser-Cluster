@@ -28,7 +28,7 @@ class BrowserAutomation:
         self.isViewed = False
         self.cookies = []
         self.last_activity_time = datetime.now()
-        self.activity_timeout_seconds = 6000
+        self.activity_timeout_seconds = 10
         self.is_active = True
 
 
@@ -216,6 +216,10 @@ class BrowserAutomation:
 
         async def perform_click():
             try:
+                # Take a screenshot using playwright and save it
+                screenshot_path = f"screenshots/{description.replace(' ', '_')}.png"
+                #await self.page.screenshot(path=screenshot_path, fullPage=True)
+                
                 elements, choices, multi_choice = await get_multi_inputs(self.page)
 
                 selection = await answer_multiple_choice(description, multi_choice)
@@ -224,22 +228,15 @@ class BrowserAutomation:
 
                 target_element = elements[int(choices[element_id][0])]
 
-                print(target_element)
                 selector = target_element[-2]
 
-                print(selector)
 
                 button_text = target_element[1]
-                print(button_text)
 
                 type_selector = target_element[2]
                 type_selector_pattern = r'type="([^"]*)"'
                 type_selector_match = re.search(type_selector_pattern, str(type_selector))
                 type_selector_parsed = type_selector_match.group(1) if type_selector_match else None
-
-                print(type_selector_parsed)
-
-
 
                 await selector.evaluate("element => element.click()", timeout=10000)
 
@@ -390,8 +387,10 @@ class BrowserAutomation:
         self.ready = False
         if self.page is not None:
             await self.page.close()
+            self.page = None
         if self.browser is not None:
             await self.browser.close()
+            self.browser = None
 
     
     async def set_ready(self):

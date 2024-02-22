@@ -24,7 +24,7 @@ app = FastAPI(lifespan=lifespan)
 
 # Step 2: Setup the logging configuration
 logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+    #level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -142,18 +142,9 @@ async def create_session(create_session_request: CreateSessionRequest):
     session_id = create_session_request.session_id
 
     if session_id in sessions:
-        raise HTTPException(status_code=409, detail="Session ID already exists")
+        browser = sessions[session_id]
+        browser.close()
     
-    # if session_id in sessions:
-    #     browser = sessions[session_id]
-
-    #     if browser.ready:
-    #         raise HTTPException(status_code=409, detail="Session ID already exists")
-    #     else:
-    #         asyncio.create_task(browser.start())
-    # else:
-    #     browser = initialize_browser_session(session_id)
-    #     sessions[session_id] = browser
     browser = initialize_browser_session(session_id)
     sessions[session_id] = browser
     return {"session_id": session_id}
