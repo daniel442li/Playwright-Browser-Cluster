@@ -27,7 +27,7 @@ class BrowserAutomation:
         self.isViewed = False
         self.cookies = []
         self.last_activity_time = datetime.now()
-        self.activity_timeout_seconds = 10
+        self.activity_timeout_seconds = 30
         self.is_active = True
 
 

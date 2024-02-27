@@ -19,5 +19,8 @@ EXPOSE 8000
 # Define environment variable
 ENV PYTHONUNBUFFERED=1
 
+# Set HTML_PATH environment variable to point to the index.html in the current directory
+ENV HTML_PATH=file:///usr/src/app/index.html?predefinedID=
+
 # Run app.py when the container launches
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
