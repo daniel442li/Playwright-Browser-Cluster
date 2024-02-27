@@ -143,7 +143,7 @@ async def create_session(create_session_request: CreateSessionRequest):
 
     if session_id in sessions:
         browser = sessions[session_id]
-        browser.close()
+        await browser.close()
     
     browser = initialize_browser_session(session_id)
     sessions[session_id] = browser

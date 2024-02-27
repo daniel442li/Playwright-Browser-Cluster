@@ -1,6 +1,5 @@
 import asyncio
 from playwright.async_api import async_playwright
-import httpx
 import json
 from multi_choice import get_multi_inputs
 import string

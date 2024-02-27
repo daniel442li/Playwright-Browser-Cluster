@@ -30,3 +30,14 @@ Postman Testing Link:
 Download Postman (Desktop)
 
 https://decluttr.postman.co/workspace/Team-Workspace~5338fec7-7789-48fd-80ac-339019885543/collection/11025870-1e85edb5-5586-482e-8aa0-47bf18dc7973?action=share&creator=11025870
+
+
+Deploy Dockerfile:
+
+docker build -t workman_api .
+
+docker run --rm \
+-e DISPLAY=host.docker.internal:0 \
+-v /tmp/.X11-unix:/tmp/.X11-unix \
+-p 8000:8000 \
+workman_api
