@@ -360,7 +360,7 @@ class BrowserAutomation:
 
     async def start_stream(self):
         self.update_activity_time()
-
+        await self.page.goto("https://google.com/")
         if self.recorder_page is not None:
             await self.recorder_page.close()
             self.recorder_page = None
