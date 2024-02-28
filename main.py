@@ -404,6 +404,18 @@ async def update_activity_time(session_id: str):
     return {"status": "Activity time updated"}
 
 
+@app.post("/start_stream/{session_id}")
+async def start_stream(session_id: str):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session ID not found")
+
+    browser = sessions[session_id]
+    try:
+        await browser.start_stream()
+        return {"status": "Stream started"}
+    except Exception as e:
+        return {"status": "Error", "message": str(e)}
+
 
 @app.get("/")
 def read_root():

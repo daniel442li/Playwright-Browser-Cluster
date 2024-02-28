@@ -23,6 +23,7 @@ class BrowserAutomation:
         self.page = None
         self.ready = False
         self.running = False
+        self.recorder_page = None
         self.isViewed = False
         self.cookies = []
         self.last_activity_time = datetime.now()
@@ -357,6 +358,16 @@ class BrowserAutomation:
         # Return the future immediately
         return future
 
+    async def start_stream(self):
+        self.update_activity_time()
+
+        if self.recorder_page is not None:
+            await self.recorder_page.close()
+            self.recorder_page = None
+
+        self.recorder_page = await self.context.new_page()
+        await self.recorder_page.goto(html_path + self.session_id)
+
     async def start(self):
         future = asyncio.Future()
         self.playwright = await async_playwright().start()
@@ -373,10 +384,6 @@ class BrowserAutomation:
         await self.page.goto("https://google.com/")
         await self.page.wait_for_load_state('load')
         
-        recorder_page = await self.context.new_page()
-        await recorder_page.goto(html_path + self.session_id)
-        
-
         self.ready = True
         self.is_active = True
         # Run the activity watchdog as a background task
