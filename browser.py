@@ -18,8 +18,7 @@ html_path = os.getenv('HTML_PATH')
 class BrowserAutomation:
     def __init__(self, session_id):
         self.session_id = session_id
-        self.last_screenshot_hash = None
-        self.screenshot_debounce_timer = None
+        self.playwright = None
         self.browser = None
         self.page = None
         self.ready = False
@@ -27,7 +26,7 @@ class BrowserAutomation:
         self.isViewed = False
         self.cookies = []
         self.last_activity_time = datetime.now()
-        self.activity_timeout_seconds = 30
+        self.activity_timeout_seconds = 6000
         self.is_active = True
 
 
@@ -359,27 +358,32 @@ class BrowserAutomation:
         return future
 
     async def start(self):
-        async with async_playwright() as p:
-            self.browser = await p.chromium.launch(
-                headless=False,
-                args=['--auto-select-tab-capture-source-by-title=Google']
-            )
-            #self.browser = await p.chromium.launch()
-            self.context = await self.browser.new_context()
-            
-            self.page = await self.context.new_page()
-            await stealth_async(self.page)
+        future = asyncio.Future()
+        self.playwright = await async_playwright().start()
+        self.browser = await self.playwright.chromium.launch(
+            headless=False,
+            args=['--auto-select-tab-capture-source-by-title=Google']
+        )
+        #self.browser = await p.chromium.launch()
+        self.context = await self.browser.new_context()
+        
+        self.page = await self.context.new_page()
+        await stealth_async(self.page)
 
-            await self.page.goto("https://google.com/")
-            await self.page.wait_for_load_state('load')
-            
-            recorder_page = await self.context.new_page()
-            await recorder_page.goto(html_path + self.session_id)
-            
+        await self.page.goto("https://google.com/")
+        await self.page.wait_for_load_state('load')
+        
+        recorder_page = await self.context.new_page()
+        await recorder_page.goto(html_path + self.session_id)
+        
 
-            self.ready = True
-            self.is_active = True
-            await self.activity_watchdog()
+        self.ready = True
+        self.is_active = True
+        # Run the activity watchdog as a background task
+        asyncio.create_task(self.activity_watchdog())
+
+        future.set_result("Browser started")
+        return future
 
     async def close(self):
         self.is_active = False

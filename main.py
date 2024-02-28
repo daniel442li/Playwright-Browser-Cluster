@@ -128,12 +128,12 @@ async def terminate_session(terminate_session_request: TerminateSessionRequest):
     return {"message": "Session terminated successfully"}
 
 
-def initialize_browser_session(session_id):
+async def initialize_browser_session(session_id):
     # Instantiate the BrowserAutomation object
     automation = BrowserAutomation(session_id)
 
     # Run the startup script in a separate asyncio task
-    asyncio.create_task(automation.start())
+    await automation.start()
     return automation
 
 
@@ -145,7 +145,7 @@ async def create_session(create_session_request: CreateSessionRequest):
         browser = sessions[session_id]
         await browser.close()
     
-    browser = initialize_browser_session(session_id)
+    browser = await initialize_browser_session(session_id)
     sessions[session_id] = browser
     return {"session_id": session_id}
 
