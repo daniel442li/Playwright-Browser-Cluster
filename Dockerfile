@@ -1,5 +1,5 @@
 # Use the Playwright image as the base
-FROM mcr.microsoft.com/playwright:v1.40.0-jammy
+FROM --platform=linux/amd64 mcr.microsoft.com/playwright:v1.40.0-jammy
 
 # Install Python 3 and pip
 RUN apt-get update && apt-get install -y python3 python3-pip
