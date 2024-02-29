@@ -417,6 +417,24 @@ async def start_stream(session_id: str):
         return {"status": "Error", "message": str(e)}
 
 
+class CoordClickBody(BaseModel):
+    x: float
+    y: float
+
+@app.post("/coord_click/{session_id}")
+async def coord_click(session_id: str, body: CoordClickBody):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session ID not found")
+
+    browser = sessions[session_id]
+    try:
+        future = await browser.coord_click(body.x, body.y)
+        result = await future
+        return {"status": "Success", "message": result}
+    except Exception as e:
+        return {"status": "Error", "message": str(e)}
+
+
 @app.get("/")
 def read_root():
     return {"Welcome to our API :-)"}

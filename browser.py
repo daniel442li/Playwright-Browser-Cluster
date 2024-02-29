@@ -411,3 +411,22 @@ class BrowserAutomation:
 
     async def set_viewed(self):
         self.isViewed = not self.isViewed
+
+    async def coord_click(self, x, y):
+        print(x, y)
+        self.update_activity_time()
+        future = asyncio.Future()
+
+        async def perform_click():
+            try:
+                await self.page.mouse.click(x, y)
+                future.set_result("Mouse clicked")
+            except Exception as e:
+                future.set_exception(e)
+
+        # Schedule the click operation in the background
+        asyncio.create_task(perform_click())
+
+        # Return the future immediately
+        return future
+
