@@ -439,11 +439,30 @@ class BrowserAutomation:
             print(f"Error during hover: {e}")
             raise
     
-    async def press_keys(self, selector: str, keys: str):
+    async def press_keys(self, key: str):
         self.update_activity_time()
         try:
             await self.page.keyboard.press(key)
-            await self.page.keyboard.type(keys)
         except Exception as e:
             print(f"Error during pressing keys: {e}")
+            raise
+    
+    async def go_back(self):
+        """Navigates one step back in the browser's history."""
+        self.update_activity_time()
+        try:
+            await self.page.go_back()
+            print("Navigated back successfully.")
+        except Exception as e:
+            print(f"Error navigating back: {e}")
+            raise
+
+    async def go_forward(self):
+        """Navigates one step forward in the browser's history."""
+        self.update_activity_time()
+        try:
+            await self.page.go_forward()
+            print("Navigated forward successfully.")
+        except Exception as e:
+            print(f"Error navigating forward: {e}")
             raise

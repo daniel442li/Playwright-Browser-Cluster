@@ -448,30 +448,28 @@ async def websocket_endpoint(websocket: WebSocket):
             if "id" in data:
                 session_id = data["id"]
                 if session_id in sessions:
-                    if data["action"] == 'click':
-                        coordinates = data.get("coordinates")
-                        if coordinates and "x" in coordinates and "y" in coordinates:
-                            x = coordinates["x"]
-                            y = coordinates["y"]
-                            try:
-                                click_result = await sessions[session_id].coord_click(x, y)
-                                await websocket.send_text(f"Click action performed: {click_result}")
-                            except Exception as e:
-                                await websocket.send_text(f"Error performing click action: {str(e)}")
-                        pass
-                    elif data["action"] == 'hover':
-                        # Handle hover action
-                        coordinates = data.get("coordinates")
-                        if coordinates and "x" in coordinates and "y" in coordinates:
-                            x = coordinates["x"]
-                            y = coordinates["y"]
-                            try:
-                                await sessions[session_id].hover_at_coordinates(x, y)
-                                await websocket.send_text(f"Hover action performed at: {x}, {y}")
-                            except Exception as e:
-                                await websocket.send_text(f"Error performing hover action: {str(e)}")
+                    session = sessions[session_id]
+                    action = data.get("action")
+                    coordinates = data.get("coordinates")
+                    try:
+                        if action == 'click' and coordinates and "x" in coordinates and "y" in coordinates:
+                            click_result = await session.coord_click(coordinates["x"], coordinates["y"])
+                            await websocket.send_text(f"Click action performed: {click_result}")
+                        elif action == 'hover' and coordinates and "x" in coordinates and "y" in coordinates:
+                            await session.hover_at_coordinates(coordinates["x"], coordinates["y"])
+                            await websocket.send_text(f"Hover action performed at: {coordinates['x']}, {coordinates['y']}")
+                        elif action == 'go_back':
+                            await session.go_back()
+                            await websocket.send_text("Browser navigated back successfully.")
+                        elif action == 'go_forward':
+                            await session.go_forward()
+                            await websocket.send_text("Browser navigated forward successfully.")
+                        elif action == 'press':
+                            await session.press_keys(data["key"])
                         else:
-                            await websocket.send_text("Error: 'x' and 'y' coordinates are required for hover action.")
+                            await websocket.send_text("Error: Invalid action or missing/invalid coordinates.")
+                    except Exception as e:
+                        await websocket.send_text(f"Error performing {action} action: {str(e)}")
                 else:
                     await websocket.send_text("Error: Invalid or missing session_id.")
             # Echo the received message back to the client
