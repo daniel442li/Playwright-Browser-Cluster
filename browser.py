@@ -27,7 +27,7 @@ class BrowserAutomation:
         self.isViewed = False
         self.cookies = []
         self.last_activity_time = datetime.now()
-        self.activity_timeout_seconds = 6000
+        self.activity_timeout_seconds = 120
         self.is_active = True
 
 
@@ -430,3 +430,20 @@ class BrowserAutomation:
         # Return the future immediately
         return future
 
+    async def hover_at_coordinates(self, x: float, y: float):
+        self.update_activity_time()
+        try:
+            # Move the mouse to the coordinates (x, y)
+            await self.page.mouse.move(x, y)
+        except Exception as e:
+            print(f"Error during hover: {e}")
+            raise
+    
+    async def press_keys(self, selector: str, keys: str):
+        self.update_activity_time()
+        try:
+            await self.page.keyboard.press(key)
+            await self.page.keyboard.type(keys)
+        except Exception as e:
+            print(f"Error during pressing keys: {e}")
+            raise

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
@@ -433,6 +433,53 @@ async def coord_click(session_id: str, body: CoordClickBody):
         return {"status": "Success", "message": result}
     except Exception as e:
         return {"status": "Error", "message": str(e)}
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            # Wait for any message from the client
+            data = await websocket.receive_text()
+            data = json.loads(data)
+            print(f"Message received: {data}")
+
+            if "id" in data:
+                session_id = data["id"]
+                if session_id in sessions:
+                    if data["action"] == 'click':
+                        coordinates = data.get("coordinates")
+                        if coordinates and "x" in coordinates and "y" in coordinates:
+                            x = coordinates["x"]
+                            y = coordinates["y"]
+                            try:
+                                click_result = await sessions[session_id].coord_click(x, y)
+                                await websocket.send_text(f"Click action performed: {click_result}")
+                            except Exception as e:
+                                await websocket.send_text(f"Error performing click action: {str(e)}")
+                        pass
+                    elif data["action"] == 'hover':
+                        # Handle hover action
+                        coordinates = data.get("coordinates")
+                        if coordinates and "x" in coordinates and "y" in coordinates:
+                            x = coordinates["x"]
+                            y = coordinates["y"]
+                            try:
+                                await sessions[session_id].hover_at_coordinates(x, y)
+                                await websocket.send_text(f"Hover action performed at: {x}, {y}")
+                            except Exception as e:
+                                await websocket.send_text(f"Error performing hover action: {str(e)}")
+                        else:
+                            await websocket.send_text("Error: 'x' and 'y' coordinates are required for hover action.")
+                else:
+                    await websocket.send_text("Error: Invalid or missing session_id.")
+            # Echo the received message back to the client
+            await websocket.send_text(f"Message text was: {data}")
+    except Exception as e:
+        # Handle exceptions (e.g., WebSocket disconnection)
+        await websocket.close()
+        print(f"WebSocket disconnected: {e}")
 
 
 @app.get("/")
