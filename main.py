@@ -466,6 +466,8 @@ async def websocket_endpoint(websocket: WebSocket):
                             await websocket.send_text("Browser navigated forward successfully.")
                         elif action == 'press':
                             await session.press_keys(data["key"])
+                        elif action == 'scroll':
+                            await session.scroll(data["amount"])
                         else:
                             await websocket.send_text("Error: Invalid action or missing/invalid coordinates.")
                     except Exception as e:

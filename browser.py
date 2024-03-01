@@ -466,3 +466,15 @@ class BrowserAutomation:
         except Exception as e:
             print(f"Error navigating forward: {e}")
             raise
+
+    async def scroll(self, amount: int):
+        """Scrolls the page up or down based on the amount provided."""
+        self.update_activity_time()
+        try:
+            # Execute JavaScript to scroll the window vertically by the specified amount
+            # Positive amount scrolls down, negative amount scrolls up
+            await self.page.evaluate(f"window.scrollBy(0, {amount});")
+            print(f"Scrolled {'down' if amount > 0 else 'up'} by {abs(amount)} pixels successfully.")
+        except Exception as e:
+            print(f"Error during scrolling by {amount} pixels: {e}")
+            raise
