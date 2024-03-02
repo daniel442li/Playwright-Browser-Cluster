@@ -1,5 +1,5 @@
 import asyncio
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, Frame, Page
 import json
 from multi_choice import get_multi_inputs
 import string
@@ -10,6 +10,8 @@ from playwright_stealth import stealth_async
 from datetime import datetime, timedelta
 from dotenv import load_dotenv, find_dotenv
 import os 
+from typing import Union
+import requests
 
 load_dotenv(find_dotenv())
 
@@ -29,6 +31,7 @@ class BrowserAutomation:
         self.last_activity_time = datetime.now()
         self.activity_timeout_seconds = 120
         self.is_active = True
+        self._current_tf_id = 0
 
 
     async def add_cookie(self, cookie):
@@ -478,3 +481,161 @@ class BrowserAutomation:
         except Exception as e:
             print(f"Error during scrolling by {amount} pixels: {e}")
             raise
+    
+    
+
+    def _get_modify_dom_and_update_current_tf_id_js_code(self) -> str:
+        """Returns the JavaScript code that is used to modify the DOM adn return the updated current_tf_id."""
+        # Future scope: Move to a js file, read it and return it
+        return """
+            ({ iframe_path, current_tf_id }) => {
+              WebQL_IDGenerator = class {
+                constructor() {
+                  this.currentID = current_tf_id || 0;
+                }
+
+                getNextID() {
+                  this.currentID += 1;
+                  return this.currentID;
+                }
+              };
+
+              const _tf_id_generator = new window.WebQL_IDGenerator();
+
+              function extractAttributes(node) {
+                const attributes = { html_tag: node.nodeName.toLowerCase() };
+                const skippedAttributes = ['style', 'srcdoc'];
+
+                for (let i = 0; i < node.attributes.length; i++) {
+                  const attribute = node.attributes[i];
+                  if (!attribute.specified || !skippedAttributes.includes(attribute.name)) {
+                    attributes[attribute.name] = attribute.value.slice(0, 100) || true;
+                  }
+                }
+
+                return attributes;
+              }
+
+              function pre_process_dom_node(node) {
+                if (!node) {
+                  return;
+                }
+                if (node.hasAttribute('aria-keyshortcuts')) {
+                  try {
+                    ariaKeyShortcuts = JSON.parse(node.getAttribute('aria-keyshortcuts'));
+                    if (ariaKeyShortcuts.hasOwnProperty('html_tag')) {
+                      if (ariaKeyShortcuts.hasOwnProperty('aria-keyshortcuts')) {
+                        ariaKeyShortcutsInsideAriaKeyShortcuts =
+                          ariaKeyShortcuts['aria-keyshortcuts'];
+                        node.setAttribute(
+                          'aria-keyshortcuts',
+                          ariaKeyShortcutsInsideAriaKeyShortcuts
+                        );
+                      } else {
+                        node.removeAttribute('aria-keyshortcuts');
+                      }
+                    }
+                  } catch (e) {
+                    //aria-keyshortcuts is not a valid json, proceed with current aria-keyshortcuts value
+                  }
+                }
+
+                let currentChildNodes = node.childNodes;
+                if (node.shadowRoot) {
+                    const childrenNodeList = Array.from(node.shadowRoot.children);
+
+                    if (childrenNodeList.length > 0) {
+                        currentChildNodes = Array.from(childrenNodeList);
+                    } else if (node.shadowRoot.textContent.trim() !== '') {
+                        node.setAttribute('aria-label', node.shadowRoot.textContent.trim());
+                    }
+                } else if (node.tagName === 'SLOT') {
+                    currentChildNodes = node.assignedNodes({ flatten: true });
+                }
+
+                tfId = _tf_id_generator.getNextID();
+
+                node.setAttribute('tf623_id', tfId);
+
+                if (iframe_path) {
+                    node.setAttribute('iframe_path', iframe_path);
+                }
+                node.setAttribute(
+                    'aria-keyshortcuts',
+                    JSON.stringify(extractAttributes(node))
+                );
+
+                const childNodes = Array.from(currentChildNodes).filter((childNode) => {
+                  return (
+                    childNode.nodeType === Node.ELEMENT_NODE ||
+                    (childNode.nodeType === Node.TEXT_NODE &&
+                      childNode.textContent.trim() !== '')
+                  );
+                });
+                for (let i = 0; i < childNodes.length; i++) {
+                  let childNode = childNodes[i];
+                  if (childNode.nodeType === Node.TEXT_NODE) {
+                    const text = childNode.textContent.trim();
+                    if (text) {
+                      if (childNodes.length > 1) {
+                        const span = document.createElement('span');
+                        span.textContent = text;
+                        node.insertBefore(span, childNode);
+                        node.removeChild(childNode);
+                        childNode = span;
+                      } else if (!node.hasAttribute('aria-label')) {
+                        const structureTags = [
+                          'a',
+                          'button',
+                          'h1',
+                          'h2',
+                          'h3',
+                          'h4',
+                          'h5',
+                          'h6',
+                          'script',
+                          'style',
+                        ];
+                        if (!structureTags.includes(node.nodeName.toLowerCase())) {
+                          node.setAttribute('aria-label', text);
+                        }
+                      }
+                    }
+                  }
+                  if (childNode.nodeType === Node.ELEMENT_NODE) {
+                    pre_process_dom_node(childNode);
+                  }
+                }
+              }
+              pre_process_dom_node(document.documentElement);
+              return _tf_id_generator.currentID;
+            };
+        """
+    
+
+    async def get_accessibility_tree(self):
+        query = """
+        {
+            search_input
+            search_btn
+        }
+        """
+        self._current_tf_id = await self.page.evaluate(
+            self._get_modify_dom_and_update_current_tf_id_js_code(),
+            {"current_tf_id": self._current_tf_id},
+        )
+
+        accessibility_tree = await self.page.accessibility.snapshot(interesting_only=False)
+        print(accessibility_tree)
+
+        request_data = {
+                "query": f"{query}",
+                "accessibility_tree": accessibility_tree,
+                "metadata": {"url": self.page.url},
+            }
+        url = "https://webql.tinyfish.io" + "/api/query"
+        headers = {"X-API-Key": "QIQJ5WvwElxNUNl5_EaiXcWb0RqxoZzXlsRE0q--g7hCvnAz941WAQ"}
+        response = requests.post(url, json=request_data, headers=headers, timeout=5)
+        pretty_response = json.dumps(response.json(), indent=4)
+        print(pretty_response)
+

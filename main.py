@@ -478,8 +478,19 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.send_text(f"Message text was: {data}")
     except Exception as e:
         # Handle exceptions (e.g., WebSocket disconnection)
-        await websocket.close()
         print(f"WebSocket disconnected: {e}")
+
+@app.get("/get_accessibility_tree/{session_id}")
+async def get_accessibility_tree(session_id: str):
+    if session_id in sessions:
+        session = sessions[session_id]
+        try:
+            accessibility_tree = await session.get_accessibility_tree()
+            return {"status": "Success", "accessibility_tree": accessibility_tree}
+        except Exception as e:
+            return {"status": "Error", "message": f"Error retrieving accessibility tree: {str(e)}"}
+    else:
+        return {"status": "Error", "message": "Invalid or missing session_id."}
 
 
 @app.get("/")
