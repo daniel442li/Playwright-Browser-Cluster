@@ -620,6 +620,8 @@ class BrowserAutomation:
             search_btn
         }
         """
+
+        self._current_tf_id = 0
         self._current_tf_id = await self.page.evaluate(
             self._get_modify_dom_and_update_current_tf_id_js_code(),
             {"current_tf_id": self._current_tf_id},
@@ -638,4 +640,13 @@ class BrowserAutomation:
         response = requests.post(url, json=request_data, headers=headers, timeout=5)
         pretty_response = json.dumps(response.json(), indent=4)
         print(pretty_response)
+
+        element = self.page.locator('[tf623_id="100"]')
+
+        print(element)
+
+        
+
+        await element.type("Oreo Separation Pump Gun JoergSprave", delay=75)
+
 
