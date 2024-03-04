@@ -613,12 +613,14 @@ class BrowserAutomation:
         """
     
 
-    async def get_accessibility_tree(self):
-        query = """
-        {
-            search_input
-            search_btn
-        }
+    async def get_accessibility_tree(self, query):
+        print(query)
+
+        
+        fish_query = f"""
+        {{
+            {query}
+        }}
         """
 
         self._current_tf_id = 0
@@ -628,10 +630,10 @@ class BrowserAutomation:
         )
 
         accessibility_tree = await self.page.accessibility.snapshot(interesting_only=False)
-        print(accessibility_tree)
+        #print(accessibility_tree)
 
         request_data = {
-                "query": f"{query}",
+                "query": f"{fish_query}",
                 "accessibility_tree": accessibility_tree,
                 "metadata": {"url": self.page.url},
             }
@@ -639,14 +641,45 @@ class BrowserAutomation:
         headers = {"X-API-Key": "QIQJ5WvwElxNUNl5_EaiXcWb0RqxoZzXlsRE0q--g7hCvnAz941WAQ"}
         response = requests.post(url, json=request_data, headers=headers, timeout=5)
         pretty_response = json.dumps(response.json(), indent=4)
-        print(pretty_response)
+        
+        response_dict = json.loads(pretty_response)
 
-        element = self.page.locator('[tf623_id="100"]')
+        print(response_dict)
 
-        print(element)
+        for query in response_dict:
+            for element in response_dict[query]:
+                element_id = element["tf623_id"]
+                element = self.page.locator(f'[tf623_id="{element_id}"]')
+                js_code = f"""
+                const element = document.querySelector('[tf623_id="{element_id}"]');
+                if (element) {{
+                    element.style.border = "2px solid red";
+                }}
+                """
+                await self.page.evaluate(js_code)
 
         
 
-        await element.type("Oreo Separation Pump Gun JoergSprave", delay=75)
+        # Single Element
+        # element_id = response_dict[query]["tf623_id"]
+        # element = self.page.locator(f'[tf623_id="{element_id}"]')
+
+
+
+        # print(element)
+
+        # js_code = f"""
+        # const element = document.querySelector('[tf623_id="{element_id}"]');
+        # if (element) {{
+        #     element.style.border = "2px solid red";
+        # }}
+        # """
+
+        # # Execute the JavaScript code in the context of the page to add a red border
+        # await self.page.evaluate(js_code)
+
+        
+
+        #await element.type("Oreo Separation Pump Gun JoergSprave", delay=75)
 
 

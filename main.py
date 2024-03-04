@@ -480,15 +480,21 @@ async def websocket_endpoint(websocket: WebSocket):
         # Handle exceptions (e.g., WebSocket disconnection)
         print(f"WebSocket disconnected: {e}")
 
+from pydantic import BaseModel
+
+class AccessibilityTreeQuery(BaseModel):
+    query: str = ""
+
 @app.get("/get_accessibility_tree/{session_id}")
-async def get_accessibility_tree(session_id: str):
+async def get_accessibility_tree(session_id: str, query: AccessibilityTreeQuery):
+    query = query.query
     if session_id in sessions:
         session = sessions[session_id]
         try:
-            accessibility_tree = await session.get_accessibility_tree()
+            accessibility_tree = await session.get_accessibility_tree(query)
             return {"status": "Success", "accessibility_tree": accessibility_tree}
         except Exception as e:
-            return {"status": "Error", "message": f"Error retrieving accessibility tree: {str(e)}"}
+            return {"status": "Error", "message": f"Error retrieving accessibility tree with query '{query.query}': {str(e)}"}
     else:
         return {"status": "Error", "message": "Invalid or missing session_id."}
 
