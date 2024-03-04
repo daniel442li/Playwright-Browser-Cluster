@@ -1,8 +1,9 @@
 # Use the Playwright image as the base
-FROM --platform=linux/amd64 mcr.microsoft.com/playwright:v1.40.0-jammy
+#FROM --platform=linux/amd64 mcr.microsoft.com/playwright:v1.40.0-jammy
+FROM mcr.microsoft.com/playwright:v1.40.0-jammy
 
 # Install Python 3, pip, and xvfb
-RUN apt-get update && apt-get install -y python3 python3-pip xvfb
+RUN apt-get update && apt-get install -y python3 python3-pip
 
 # Set the working directory in the container
 WORKDIR /usr/src/app
@@ -11,7 +12,7 @@ WORKDIR /usr/src/app
 COPY . .
 
 # Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Make port 8000 available to the world outside this container
 EXPOSE 8000

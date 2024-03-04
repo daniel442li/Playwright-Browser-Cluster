@@ -51,25 +51,31 @@
 
             // Push tracks from local stream to peer connection
             localStream.getTracks().forEach((track) => {
+                console.log(`Adding local track: ${track.kind}`);
                 pc.addTrack(track, localStream);
             });
 
             // Pull tracks from remote stream, add to video stream
             pc.ontrack = (event) => {
                 event.streams[0].getTracks().forEach((track) => {
+                console.log(`Adding track to remoteStream: ${track.kind}`);
                 remoteStream.addTrack(track);
                 });
             };
 
-            //webcamVideo.srcObject = localStream;
             // Reference Firestore collections for signaling
             const callDoc = firestore.collection('calls').doc(predefinedID);
+            console.log(`Firestore document reference created for ID: ${predefinedID}`);
+
             const offerCandidates = callDoc.collection('offerCandidates');
             const answerCandidates = callDoc.collection('answerCandidates');
+            console.log("Firestore collections for offerCandidates and answerCandidates initialized.");
 
 
             // Get candidates for caller, save to db
             pc.onicecandidate = (event) => {
+                console.log("New ICE candidate discovered, saving to Firestore.");
+                console.log(event.candidate.toJSON());
                 event.candidate && offerCandidates.add(event.candidate.toJSON());
             };
 
@@ -86,6 +92,7 @@
 
             // Listen for remote answer
             callDoc.onSnapshot((snapshot) => {
+                console.log("Answer found and set as remote description.");
                 const data = snapshot.data();
                 if (!pc.currentRemoteDescription && data?.answer) {
                 const answerDescription = new RTCSessionDescription(data.answer);
@@ -94,16 +101,17 @@
             });
 
             // When answered, add candidate to peer connection
-            answerCandidates.onSnapshot((snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                if (change.type === 'added') {
-                    const candidate = new RTCIceCandidate(change.doc.data());
-                    pc.addIceCandidate(candidate);
-                }
-                });
-            });
+            // answerCandidates.onSnapshot((snapshot) => {
+            //     snapshot.docChanges().forEach((change) => {
+            //     if (change.type === 'added') {
+            //         console.log("New ICE candidate found, adding to peer connection.");
+            //         const candidate = new RTCIceCandidate(change.doc.data());
+            //         pc.addIceCandidate(candidate);
+            //     }
+            //     });
+            // });
         };
-
+        
         startStream();
         
     </script>

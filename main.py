@@ -99,6 +99,7 @@ origins = [
     "http://localhost:3000",  # React app
     "http://localhost:8080",  # Also allow localhost for local development
     "http://localhost:8000",  # Allow any localhost (for local development)
+    "https://workman.so/",
 ]
 
 # Set all CORS enabled origins
