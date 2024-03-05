@@ -9,6 +9,10 @@ import logging
 import asyncio
 from browser import BrowserAutomation
 import json
+import os
+import sys
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 load_dotenv(find_dotenv())
 
@@ -99,7 +103,9 @@ origins = [
     "http://localhost:3000",  # React app
     "http://localhost:8080",  # Also allow localhost for local development
     "http://localhost:8000",  # Allow any localhost (for local development)
-    "https://workman.so/",
+    "https://www.workman.so",
+    "https://workman-website-git-development-daniel442li.vercel.app",
+    ""
 ]
 
 # Set all CORS enabled origins
@@ -436,7 +442,7 @@ async def coord_click(session_id: str, body: CoordClickBody):
         return {"status": "Error", "message": str(e)}
 
 
-@app.websocket("/ws")
+@app.websocket("/socket")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:

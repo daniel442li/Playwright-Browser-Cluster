@@ -100,16 +100,15 @@
                 }
             });
 
-            // When answered, add candidate to peer connection
-            // answerCandidates.onSnapshot((snapshot) => {
-            //     snapshot.docChanges().forEach((change) => {
-            //     if (change.type === 'added') {
-            //         console.log("New ICE candidate found, adding to peer connection.");
-            //         const candidate = new RTCIceCandidate(change.doc.data());
-            //         pc.addIceCandidate(candidate);
-            //     }
-            //     });
-            // });
+            answerCandidates.onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    console.log("New ICE candidate found, adding to peer connection.");
+                    const candidate = new RTCIceCandidate(change.doc.data());
+                    pc.addIceCandidate(candidate);
+                }
+                });
+            });
         };
         
         startStream();

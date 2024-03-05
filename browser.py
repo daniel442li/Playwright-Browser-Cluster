@@ -15,7 +15,7 @@ import requests
 
 load_dotenv(find_dotenv())
 
-html_path = os.getenv('HTML_PATH')
+html_path = os.getenv('HTML_PATH') + "="
 
 class BrowserAutomation:
     def __init__(self, session_id):
