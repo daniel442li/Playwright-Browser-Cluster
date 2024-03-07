@@ -311,6 +311,7 @@ class BrowserAutomation:
                     
                     answer = input["answer"]
                     label = input["label"]
+                    type = input["type"]
                     print(label)
                     element_id = await self._get_index_from_option_name(answer)
                     target_element = elements[int(choices[element_id][0])]
@@ -321,11 +322,20 @@ class BrowserAutomation:
                     selector = target_element[-2]
 
                     print(selector)
+                    
+                    if type == "input":
+                        await selector.clear(timeout=1000)
+                        #await selector.fill("[FILL FORM #" + str(count) + " HERE]", timeout=10000)
 
-                    await selector.clear(timeout=1000)
-                    #await selector.fill("[FILL FORM #" + str(count) + " HERE]", timeout=10000)
+                        await selector.fill(str(label) + " Input", timeout=1000)
 
-                    await selector.fill(str(label) + " Input", timeout=1000)
+                    if type == "file":
+                        await selector.set_input_files("./Resume.pdf")
+                    
+                    if type == "select":
+                        await selector.select_option(value=selector.first())
+                    
+
 
                     #pattern = r"parent_node: ([\w\s]+) name="
                     #parent_node_text = re.search(pattern, parent_node).group(1) if re.search(pattern, parent_node) else None

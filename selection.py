@@ -53,9 +53,14 @@ answer_all = {
                     "label": {
                         "type": "string",
                         "description": "After picking your answer, pick a label based on the parent node / the text around the element. Should be like 'Company Name', 'Last Name', etc. Look at the text in the multiple choice they are ordered. Do not just call it Input Text. Find the right element in the DOM.",
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "The type of element. The three types are input (text, email, etc), file (file upload), and select (dropdown).",
+                        "enum": ["input", "file", "select"],
                     }
                 },
-                "required": ["answer", "label"],
+                "required": ["answer", "label", "type"],
             },
         }
     },
@@ -118,13 +123,15 @@ async def answer_multiple_choice_forms(quiz):
             {
                 "role": "user",
                 "content": (
-                    "You are an expert form filler who fills forms in a web browser."
+                    "You are an expert form filler who fills forms in a web browser for job applications."
                     "You will be passed a multiple choice QA of HTML and an instruction from the user."
                     "You want to fill out all the forms on the website. You will find all form elements to fill regardless of syntax correctness."
                     "The multiple choices are ordered row-wise from left to right. "
                     "After it hits the right border it goes from top to bottom. "
                     "You will only select elements that are form elements. These include inputs, textareas, comboboxes, etc."
                     "Do not select submit buttons or other non-form elements."
+                    #"You will only fill out the form elements which are required. This is indicated by the asterisk (*) symbol. If a form element is required, you must fill it out. If it is not required, you can skip it."
+                    "Please also specify the type of element. The three types are input (text, email, etc), file (file upload), and select (dropdown)."
                     "You should seperate each answer choice into a seperate array element. The final answer should look something like this: ['A', 'F', 'K'], etc."
                     "After picking your answer, pick a label based on the parent node / the text around the element. Should be like 'Company Name', 'Last Name', etc. Look at the text in the multiple choice they are ordered. Do not just call it Input Text. Find the right element based on the DOM."
                 ) + "\n"

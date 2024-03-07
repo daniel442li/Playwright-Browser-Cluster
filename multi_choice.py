@@ -175,10 +175,12 @@ async def get_element_description(element, tag_name, role_value, type_value):
 
 
 async def get_element_data(element, tag_name):
+    print("get_element_data for: " + str(element) + str(tag_name))
     tag_name_list = ["a", "button", "input", "select", "textarea", "adc-tab"]
 
     # await aprint(element,tag_name)
-    if await element.is_hidden(timeout=0) or await element.is_disabled(timeout=0):
+    if await element.is_disabled(timeout=0):
+        print("rip")
         return None
 
     tag_head = ""
@@ -202,7 +204,10 @@ async def get_element_data(element, tag_name):
     description = await get_element_description(
         element, real_tag_name, role_value, type_value
     )
+
+    print(description)
     if not description:
+        print("no description" + str(element) + str(tag_name))
         return None
 
     rect = await element.bounding_box() or {"x": 0, "y": 0, "width": 0, "height": 0}
@@ -228,35 +233,35 @@ async def get_element_data(element, tag_name):
 
 
 async def get_elements_with_playwright(page, type="default"):
+    #changing these just for jobs
     interactive_elements_selectors = [
-        "a",
-        "button",
+        #"a",
+        #"button",
         "input",
         "select",
-        "textarea",
-        "adc-tab",
-        '[role="button"]',
-        '[role="radio"]',
-        '[role="option"]',
-        '[role="combobox"]',
-        '[role="textbox"]',
-        '[role="listbox"]',
-        '[role="menu"]',
-        '[type="button"]',
-        '[type="radio"]',
-        '[type="combobox"]',
-        '[type="textbox"]',
-        '[type="listbox"]',
-        '[type="menu"]',
-        '[tabindex]:not([tabindex="-1"])',
-        '[contenteditable]:not([contenteditable="false"])',
-        "[onclick]",
-        "[onfocus]",
-        "[onkeydown]",
-        "[onkeypress]",
-        "[onkeyup]",
-        "[checkbox]",
-        '[aria-disabled="false"],[data-link]',
+        # "textarea",
+        # '[role="button"]',
+        # '[role="radio"]',
+        # '[role="option"]',
+        # '[role="combobox"]',
+        # '[role="textbox"]',
+        # '[role="listbox"]',
+        # '[role="menu"]',
+        # '[type="button"]',
+        # '[type="radio"]',
+        # '[type="combobox"]',
+        # '[type="textbox"]',
+        # '[type="listbox"]',
+        # '[type="menu"]',
+        # '[tabindex]:not([tabindex="-1"])',
+        # '[contenteditable]:not([contenteditable="false"])',
+        # "[onclick]",
+        # "[onfocus]",
+        # "[onkeydown]",
+        # "[onkeypress]",
+        # "[onkeyup]",
+        # "[checkbox]",
+        # '[aria-disabled="false"],[data-link]',
     ]
 
     tasks = []
@@ -270,7 +275,7 @@ async def get_elements_with_playwright(page, type="default"):
             tag_name = selector.replace(':not([tabindex="-1"])', "")
             tag_name = tag_name.replace(':not([contenteditable="false"])', "")
             task = get_element_data(element, tag_name)
-
+            
             tasks.append(task)
 
     results = await asyncio.gather(*tasks)
