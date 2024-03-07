@@ -15,7 +15,7 @@ import requests
 
 load_dotenv(find_dotenv())
 
-html_path = os.getenv('HTML_PATH') + "="
+html_path = os.getenv('HTML_PATH')
 
 class BrowserAutomation:
     def __init__(self, session_id):
@@ -374,19 +374,25 @@ class BrowserAutomation:
     async def start(self):
         future = asyncio.Future()
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(
+        extension_path = './internal-extension'
+        self.context = await self.playwright.chromium.launch_persistent_context(
+            "",
             headless=False,
-            args=['--auto-select-tab-capture-source-by-title=Google']
+            args=['--auto-select-tab-capture-source-by-title=Google',
+                  f'--disable-extensions-except={extension_path}',
+                  f'--load-extension={extension_path}'
+
+                  
+                  
+                  ]
         )
-        #self.browser = await p.chromium.launch()
-        self.context = await self.browser.new_context()
         
         self.page = await self.context.new_page()
         await stealth_async(self.page)
 
         await self.page.goto("https://google.com/")
         await self.page.wait_for_load_state('load')
-        
+
         self.ready = True
         self.is_active = True
         # Run the activity watchdog as a background task
@@ -616,12 +622,20 @@ class BrowserAutomation:
     async def get_accessibility_tree(self, query):
         print(query)
 
-        
+        list_query = query + "[]"
         fish_query = f"""
         {{
-            {query}
+            {list_query}
         }}
         """
+
+        fish_query = """
+            {
+                notes[]
+                {
+                    title
+                }
+            }"""
 
         self._current_tf_id = 0
         self._current_tf_id = await self.page.evaluate(
@@ -639,24 +653,31 @@ class BrowserAutomation:
             }
         url = "https://webql.tinyfish.io" + "/api/query"
         headers = {"X-API-Key": "QIQJ5WvwElxNUNl5_EaiXcWb0RqxoZzXlsRE0q--g7hCvnAz941WAQ"}
-        response = requests.post(url, json=request_data, headers=headers, timeout=5)
+        response = requests.post(url, json=request_data, headers=headers, timeout=500)
         pretty_response = json.dumps(response.json(), indent=4)
         
         response_dict = json.loads(pretty_response)
 
         print(response_dict)
 
-        for query in response_dict:
-            for element in response_dict[query]:
-                element_id = element["tf623_id"]
-                element = self.page.locator(f'[tf623_id="{element_id}"]')
-                js_code = f"""
-                const element = document.querySelector('[tf623_id="{element_id}"]');
-                if (element) {{
-                    element.style.border = "2px solid red";
-                }}
-                """
-                await self.page.evaluate(js_code)
+        print("hello")
+        print(len(response_dict[query]))
+
+        print(response_dict[query])
+
+        for element in response_dict[query]:
+            print(element)
+            element_id = element["tf623_id"]
+            print(element_id)
+            element = self.page.locator(f'[tf623_id="{element_id}"]')
+            #await element.click()
+            # js_code = f"""
+            # const element = document.querySelector('[tf623_id="{element_id}"]');
+            # if (element) {{
+            #     element.style.border = "2px solid red";
+            # }}
+            # """
+            # await self.page.evaluate(js_code)
 
         
 

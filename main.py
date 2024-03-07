@@ -393,7 +393,7 @@ async def session_exists(session_id: str):
 @app.get("/session_ready/{session_id}", response_model=SessionReadyResponse)
 async def session_ready(session_id: str):
     if session_id not in sessions:
-        raise HTTPException(status_code=404, detail="Invalid session ID")
+        return {"ready": False}
 
     browser = sessions[session_id]
 
@@ -475,6 +475,8 @@ async def websocket_endpoint(websocket: WebSocket):
                             await session.press_keys(data["key"])
                         elif action == 'scroll':
                             await session.scroll(data["amount"])
+                        elif action == 'insert_bounding':
+                            await session.get_accessibility_tree(data["query"])
                         else:
                             await websocket.send_text("Error: Invalid action or missing/invalid coordinates.")
                     except Exception as e:
@@ -513,4 +515,4 @@ def read_root():
 
 # uvicorn main:app 
 
-# uvicorn main:app --host 0.0.0.0 --port 8000
+# uvicorn main:app --host 0.0.0.0 --port 8000 --reload

@@ -26,27 +26,6 @@ def format_options(choices):
     option_text += multi_choice + "\n\n"
     return option_text
 
-
-
-# def format_options(choices):
-#     option_text = ""
-#     abcd = ""
-#     non_abcd = ""
-
-#     multi_choice = ""
-#     for multichoice_idx, choice in enumerate(choices):
-#         multi_choice += f"{generate_option_name(multichoice_idx)}. {choice[1]}\n"
-#         abcd += f"{generate_option_name(multichoice_idx)}, "
-
-
-#     multi_choice += f"{non_abcd}. None of the other options match the correct element"
-#     # option_text += abcd
-#     option_text += f"If none of these elements match your target element, please select {non_abcd}. None of the other options match the correct element.\n"
-
-#     option_text += multi_choice + "\n\n"
-#     return option_text
-
-
 def format_choices(elements, candidate_ids):
     converted_elements = [
         f'<{element[2]} id="{i}">'
@@ -249,49 +228,36 @@ async def get_element_data(element, tag_name):
 
 
 async def get_elements_with_playwright(page, type="default"):
-    if type == "not using this for now":
-        interactive_elements_selectors = [
-            "button",
-            "input",
-            "textarea",
-            '[role="button"]',
-            '[role="combobox"]',
-            '[role="textbox"]',
-            '[type="button"]',
-            '[type="combobox"]',
-            '[type="textbox"]',
-        ]
-    else:
-        interactive_elements_selectors = [
-            "a",
-            "button",
-            "input",
-            "select",
-            "textarea",
-            "adc-tab",
-            '[role="button"]',
-            '[role="radio"]',
-            '[role="option"]',
-            '[role="combobox"]',
-            '[role="textbox"]',
-            '[role="listbox"]',
-            '[role="menu"]',
-            '[type="button"]',
-            '[type="radio"]',
-            '[type="combobox"]',
-            '[type="textbox"]',
-            '[type="listbox"]',
-            '[type="menu"]',
-            '[tabindex]:not([tabindex="-1"])',
-            '[contenteditable]:not([contenteditable="false"])',
-            "[onclick]",
-            "[onfocus]",
-            "[onkeydown]",
-            "[onkeypress]",
-            "[onkeyup]",
-            "[checkbox]",
-            '[aria-disabled="false"],[data-link]',
-        ]
+    interactive_elements_selectors = [
+        "a",
+        "button",
+        "input",
+        "select",
+        "textarea",
+        "adc-tab",
+        '[role="button"]',
+        '[role="radio"]',
+        '[role="option"]',
+        '[role="combobox"]',
+        '[role="textbox"]',
+        '[role="listbox"]',
+        '[role="menu"]',
+        '[type="button"]',
+        '[type="radio"]',
+        '[type="combobox"]',
+        '[type="textbox"]',
+        '[type="listbox"]',
+        '[type="menu"]',
+        '[tabindex]:not([tabindex="-1"])',
+        '[contenteditable]:not([contenteditable="false"])',
+        "[onclick]",
+        "[onfocus]",
+        "[onkeydown]",
+        "[onkeypress]",
+        "[onkeyup]",
+        "[checkbox]",
+        '[aria-disabled="false"],[data-link]',
+    ]
 
     tasks = []
 
