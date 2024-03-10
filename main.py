@@ -13,11 +13,18 @@ import os
 import sys
 import sentry_sdk
 
+# Import configurations from config.py
+from config import (
+    SENTRY_DSN, SENTRY_TRACES_SAMPLE_RATE, SENTRY_ENVIRONMENT,
+    CORS_ORIGINS, HTML_PATH, OPENAI_API_KEY
+)
 
+
+# Initialize Sentry with variables from config.py
 sentry_sdk.init(
-    dsn="https://d6e634592e07af6d42b36be19462b9dd@o4506816637370368.ingest.us.sentry.io/4506887804485632",
-    traces_sample_rate=1.0,  # Adjust the sample rate as needed
-    environment="development"  # Or use "production", depending on your environment
+    dsn=SENTRY_DSN,
+    traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+    environment=SENTRY_ENVIRONMENT
 )
 
 if sys.platform == 'win32':
@@ -107,25 +114,14 @@ class SessionReadyResponse(BaseModel):
 class DOMData(BaseModel):
     dom_data: str
 
-# Allow CORS
-origins = [
-    "http://localhost:3000",  # React app
-    "http://localhost:8080",  # Also allow localhost for local development
-    "http://localhost:8000",  # Allow any localhost (for local development)
-    "https://www.workman.so",
-    "https://workman-website-git-development-daniel442li.vercel.app",
-    ""
-]
 
-# Set all CORS enabled origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # Dictionary to store session data
 sessions: Dict[str, BrowserAutomation] = {}
@@ -135,7 +131,7 @@ sessions: Dict[str, BrowserAutomation] = {}
 async def trigger_error():
     division_by_zero = 1 / 0
 
-    
+
 @app.post("/terminate_session", response_model=TerminateSessionResponse)
 async def terminate_session(terminate_session_request: TerminateSessionRequest):
     session_id = terminate_session_request.session_id

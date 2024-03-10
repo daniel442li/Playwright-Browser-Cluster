@@ -8,14 +8,8 @@ from selection import answer_multiple_choice_forms
 import re
 from playwright_stealth import stealth_async
 from datetime import datetime, timedelta
-from dotenv import load_dotenv, find_dotenv
-import os 
-from typing import Union
+from config import HTML_PATH, OPENAI_API_KEY
 import requests
-
-load_dotenv(find_dotenv())
-
-html_path = os.getenv('HTML_PATH')
 
 class BrowserAutomation:
     def __init__(self, session_id):
@@ -379,7 +373,7 @@ class BrowserAutomation:
             self.recorder_page = None
 
         self.recorder_page = await self.context.new_page()
-        await self.recorder_page.goto(html_path + self.session_id)
+        await self.recorder_page.goto(HTML_PATH + self.session_id)
 
     async def start(self):
         future = asyncio.Future()
