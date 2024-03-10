@@ -11,6 +11,15 @@ from browser import BrowserAutomation
 import json
 import os
 import sys
+import sentry_sdk
+
+
+sentry_sdk.init(
+    dsn="https://d6e634592e07af6d42b36be19462b9dd@o4506816637370368.ingest.us.sentry.io/4506887804485632",
+    traces_sample_rate=1.0,  # Adjust the sample rate as needed
+    environment="development"  # Or use "production", depending on your environment
+)
+
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
@@ -117,9 +126,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Dictionary to store session data
 sessions: Dict[str, BrowserAutomation] = {}
 
+
+@app.get("/sentry-debug")
+async def trigger_error():
+    division_by_zero = 1 / 0
+
+    
 @app.post("/terminate_session", response_model=TerminateSessionResponse)
 async def terminate_session(terminate_session_request: TerminateSessionRequest):
     session_id = terminate_session_request.session_id
@@ -490,6 +506,7 @@ async def websocket_endpoint(websocket: WebSocket):
         print(f"WebSocket disconnected: {e}")
 
 from pydantic import BaseModel
+
 
 class AccessibilityTreeQuery(BaseModel):
     query: str = ""
