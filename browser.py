@@ -8,7 +8,7 @@ from selection import answer_multiple_choice_forms
 import re
 from playwright_stealth import stealth_async
 from datetime import datetime, timedelta
-from config import HTML_PATH, OPENAI_API_KEY
+from config import HTML_PATH
 import requests
 
 class BrowserAutomation:

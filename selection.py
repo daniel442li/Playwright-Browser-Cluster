@@ -1,10 +1,9 @@
 from openai import OpenAI
 import json
-from dotenv import load_dotenv, find_dotenv
 
-load_dotenv(find_dotenv())
-client = OpenAI()
+from config import OPENAI_API_KEY
 
+client = OpenAI(api_key=OPENAI_API_KEY)
 model = "gpt-4-1106-preview"
 image_model = ''
 
