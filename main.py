@@ -1,10 +1,9 @@
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from contextlib import asynccontextmanager
-from typing import Optional
 from dotenv import load_dotenv, find_dotenv
 from typing import Dict
+from routes import *
 import logging
 import asyncio
 from browser import BrowserAutomation
@@ -16,9 +15,8 @@ import sentry_sdk
 # Import configurations from config.py
 from config import (
     SENTRY_DSN, SENTRY_TRACES_SAMPLE_RATE, SENTRY_ENVIRONMENT,
-    CORS_ORIGINS, HTML_PATH, OPENAI_API_KEY
+    CORS_ORIGINS
 )
-
 
 # Initialize Sentry with variables from config.py
 sentry_sdk.init(
@@ -47,72 +45,6 @@ logging.basicConfig(
     #level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-
-class CreateSessionRequest(BaseModel):
-    session_id: str
-
-
-class CreateSessionResponse(BaseModel):
-    session_id: str
-
-
-class CommandRequestNavigate(BaseModel):
-    session_id: str
-    link: str
-    cookie: Optional[list] = None 
-
-class CommandRequestSearch(BaseModel):
-    session_id: str
-    query: str
-
-class CommandRequestClick(BaseModel):
-    session_id: str
-    query: str
-
-class CommandRequestPress(BaseModel):
-    session_id: str
-    key: str
-
-
-class CommandResponse(BaseModel):
-    status: str
-    action: str
-    parameters: list
-
-class FillForms(BaseModel):
-    session_id: str
-
-class CacheRequest(BaseModel):
-    session_id: str
-    parameters: list
-
-
-class SessionList(BaseModel):
-    sessions: list
-
-
-class TerminateSessionRequest(BaseModel):
-    session_id: str
-
-
-class TerminateSessionResponse(BaseModel):
-    message: str
-
-
-class SessionExistsRequest(BaseModel):
-    session_id: str
-
-
-class SessionExistsResponse(BaseModel):
-    exists: bool
-
-class SessionReadyResponse(BaseModel):
-    ready: bool
-
-
-class DOMData(BaseModel):
-    dom_data: str
 
 
 app.add_middleware(
@@ -501,11 +433,6 @@ async def websocket_endpoint(websocket: WebSocket):
         # Handle exceptions (e.g., WebSocket disconnection)
         print(f"WebSocket disconnected: {e}")
 
-from pydantic import BaseModel
-
-
-class AccessibilityTreeQuery(BaseModel):
-    query: str = ""
 
 @app.get("/get_accessibility_tree/{session_id}")
 async def get_accessibility_tree(session_id: str, query: AccessibilityTreeQuery):
