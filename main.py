@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv, find_dotenv
 from typing import Dict
-from routes import *
+from models import *
 import logging
 import asyncio
 from browser import BrowserAutomation
@@ -11,6 +11,8 @@ import json
 import os
 import sys
 import sentry_sdk
+from websocket import websocket_endpoint
+from shared import sessions
 
 # Import configurations from config.py
 from config import (
@@ -30,7 +32,6 @@ if sys.platform == 'win32':
 
 load_dotenv(find_dotenv())
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Before API starts
@@ -40,7 +41,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Step 2: Setup the logging configuration
 logging.basicConfig(
     #level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -55,14 +55,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Dictionary to store session data
-sessions: Dict[str, BrowserAutomation] = {}
-
-
 @app.get("/sentry-debug")
 async def trigger_error():
     division_by_zero = 1 / 0
-
 
 @app.post("/terminate_session", response_model=TerminateSessionResponse)
 async def terminate_session(terminate_session_request: TerminateSessionRequest):
@@ -368,10 +363,6 @@ async def start_stream(session_id: str):
         return {"status": "Error", "message": str(e)}
 
 
-class CoordClickBody(BaseModel):
-    x: float
-    y: float
-
 @app.post("/coord_click/{session_id}")
 async def coord_click(session_id: str, body: CoordClickBody):
     if session_id not in sessions:
@@ -386,52 +377,7 @@ async def coord_click(session_id: str, body: CoordClickBody):
         return {"status": "Error", "message": str(e)}
 
 
-@app.websocket("/socket")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    try:
-        while True:
-            # Wait for any message from the client
-            data = await websocket.receive_text()
-            data = json.loads(data)
-            print(f"Message received: {data}")
-
-            if "id" in data:
-                session_id = data["id"]
-                if session_id in sessions:
-                    session = sessions[session_id]
-                    action = data.get("action")
-                    coordinates = data.get("coordinates")
-                    try:
-                        if action == 'click' and coordinates and "x" in coordinates and "y" in coordinates:
-                            click_result = await session.coord_click(coordinates["x"], coordinates["y"])
-                            await websocket.send_text(f"Click action performed: {click_result}")
-                        elif action == 'hover' and coordinates and "x" in coordinates and "y" in coordinates:
-                            await session.hover_at_coordinates(coordinates["x"], coordinates["y"])
-                            await websocket.send_text(f"Hover action performed at: {coordinates['x']}, {coordinates['y']}")
-                        elif action == 'go_back':
-                            await session.go_back()
-                            await websocket.send_text("Browser navigated back successfully.")
-                        elif action == 'go_forward':
-                            await session.go_forward()
-                            await websocket.send_text("Browser navigated forward successfully.")
-                        elif action == 'press':
-                            await session.press_keys(data["key"])
-                        elif action == 'scroll':
-                            await session.scroll(data["amount"])
-                        elif action == 'insert_bounding':
-                            await session.get_accessibility_tree(data["query"])
-                        else:
-                            await websocket.send_text("Error: Invalid action or missing/invalid coordinates.")
-                    except Exception as e:
-                        await websocket.send_text(f"Error performing {action} action: {str(e)}")
-                else:
-                    await websocket.send_text("Error: Invalid or missing session_id.")
-            # Echo the received message back to the client
-            await websocket.send_text(f"Message text was: {data}")
-    except Exception as e:
-        # Handle exceptions (e.g., WebSocket disconnection)
-        print(f"WebSocket disconnected: {e}")
+@app.websocket("/socket")(websocket_endpoint)
 
 
 @app.get("/get_accessibility_tree/{session_id}")

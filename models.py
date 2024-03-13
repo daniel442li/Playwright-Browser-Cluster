@@ -69,3 +69,8 @@ class DOMData(BaseModel):
 
 class AccessibilityTreeQuery(BaseModel):
     query: str = ""
+
+
+class CoordClickBody(BaseModel):
+    x: float
+    y: float
