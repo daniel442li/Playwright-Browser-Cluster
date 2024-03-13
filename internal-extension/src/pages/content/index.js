@@ -24,4 +24,13 @@ document.addEventListener('click', function(e) {
       dot.style.opacity = opacity;
       opacity -= opacity * 0.1;
     }, 50);
+
+    if (e.target.tagName === 'BUTTON') {
+      let selector = e.target.id ? `#${e.target.id}` :
+                     e.target.className ? `.${e.target.className.split(' ')[0]}` : 
+                     'button';
+      chrome.runtime.sendMessage({type: 'buttonClicked', selector: selector});
+    }
+
 });
+
