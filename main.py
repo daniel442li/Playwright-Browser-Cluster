@@ -1,8 +1,7 @@
-from fastapi import FastAPI, WebSocket, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv, find_dotenv
-from typing import Dict
 from models import *
 import logging
 import asyncio
@@ -377,9 +376,6 @@ async def coord_click(session_id: str, body: CoordClickBody):
         return {"status": "Error", "message": str(e)}
 
 
-@app.websocket("/socket")(websocket_endpoint)
-
-
 @app.get("/get_accessibility_tree/{session_id}")
 async def get_accessibility_tree(session_id: str, query: AccessibilityTreeQuery):
     query = query.query
@@ -393,6 +389,8 @@ async def get_accessibility_tree(session_id: str, query: AccessibilityTreeQuery)
     else:
         return {"status": "Error", "message": "Invalid or missing session_id."}
 
+
+@app.websocket("/socket")(websocket_endpoint)
 
 @app.get("/")
 def read_root():

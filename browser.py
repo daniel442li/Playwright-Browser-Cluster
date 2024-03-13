@@ -10,6 +10,8 @@ from playwright_stealth import stealth_async
 from datetime import datetime, timedelta
 from config import HTML_PATH
 import requests
+import tldextract
+from urllib.parse import urlparse
 
 class BrowserAutomation:
     def __init__(self, session_id):
@@ -174,6 +176,15 @@ class BrowserAutomation:
         # Return the future immediately
         return future
 
+    def has_valid_domain(self, url):
+        extracted = tldextract.extract(url)
+        # Check if the suffix (TLD) is present
+        return bool(extracted.suffix)
+    
+    def has_correct_protocol(self, url, expected_protocol):
+        parsed_url = urlparse(url)
+        return parsed_url.scheme == expected_protocol
+
     async def navigate(self, passedLink):
         self.update_activity_time()
         future = asyncio.Future()
@@ -181,13 +192,20 @@ class BrowserAutomation:
         async def load_page():
             try:
                 link = passedLink
-                
-                # if not re.match(r'^[a-zA-Z]+://', link):
-                #     link = 'https://' + link
-                
-                # if not re.match(r'^https?://www\.', link):
-                #     link = link.replace('https://', 'https://www.', 1)
-                
+
+                valid_domain = self.has_valid_domain(link)
+
+                if valid_domain:
+                    has_correct_protocol = self.has_correct_protocol(link, "https")
+                    if not has_correct_protocol:
+                        link = "https://" + link                        
+                else:
+                    search_url = f"https://www.google.com/search?q={passedLink}"
+                    link = search_url
+                    
+
+
+                print(link)               
                 await self.page.context.add_cookies(self.cookies)
 
                 print(self.cookies)

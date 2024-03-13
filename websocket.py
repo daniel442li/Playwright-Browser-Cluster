@@ -34,6 +34,7 @@ async def handle_action(websocket, data):
         'press': handle_press,
         'scroll': handle_scroll,
         'insert_bounding': handle_insert_bounding,
+        'navigate': handle_navigate,
     }
 
     if action in action_handlers:
@@ -92,3 +93,11 @@ async def handle_insert_bounding(websocket, session, data):
         await websocket.send_text(f"Accessibility tree retrieved for query {data['query']}: {result}")
     else:
         await websocket.send_text("Error: Missing query for insert bounding action.")
+
+async def handle_navigate(websocket, session, data):
+    print(data)
+    if "url" in data:
+        await session.navigate(data["url"])
+        await websocket.send_text(f"Browser navigated to {data['url']} successfully.")
+    else:
+        await websocket.send_text("Error: Missing URL for navigate action.")
