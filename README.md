@@ -41,3 +41,8 @@ docker run --rm \
 -v /tmp/.X11-unix:/tmp/.X11-unix \
 -p 8000:8000 \
 workman_api
+
+
+Generate Requirements
+
+pigar generate

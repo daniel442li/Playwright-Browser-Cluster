@@ -402,7 +402,8 @@ class BrowserAutomation:
             headless=False,
             args=['--auto-select-tab-capture-source-by-title=Google',
                   f'--disable-extensions-except={extension_path}',
-                  f'--load-extension={extension_path}'
+                  f'--load-extension={extension_path}',
+                  '--enable-blink-features=AccessibilityObjectModel',
 
                   
                   
@@ -666,7 +667,7 @@ class BrowserAutomation:
         )
 
         accessibility_tree = await self.page.accessibility.snapshot(interesting_only=False)
-        #print(accessibility_tree)
+        print(accessibility_tree)
 
         request_data = {
                 "query": f"{fish_query}",

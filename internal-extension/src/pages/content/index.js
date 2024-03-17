@@ -38,18 +38,18 @@ document.addEventListener('click', function(e) {
     // console.log('Click Position: X -', e.pageX, 'Y -', e.pageY);
     // console.log('Click Position relative to viewport: X -', e.clientX, 'Y -', e.clientY);
 
-  //   let element = e.target;
-  //   while (element) {
-  //     console.log('Element:', element.tagName);
-  //     if (element.tagName === 'BUTTON' || (element.tagName === 'INPUT' && ['text', 'password', 'email', 'search'].includes(element.type))) {
-  //         console.log('Button or text input clicked: ', element);
+    let element = e.target;
+    while (element) {
+      console.log('Element:', element.tagName);
+      if (element.tagName === 'BUTTON' || (element.tagName === 'INPUT' && ['text', 'password', 'email', 'search'].includes(element.type))) {
+          console.log('Button or text input clicked: ', element);
           
-  //         // Your existing logging here...
+          // Your existing logging here...
   
-  //         break;
-  //     }
-  //     element = element.parentElement;
-  // }
+          break;
+      }
+      element = element.parentElement;
+  }
 
     
 
