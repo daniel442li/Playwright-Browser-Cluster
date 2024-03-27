@@ -396,7 +396,13 @@ class BrowserAutomation:
     async def start(self):
         future = asyncio.Future()
         self.playwright = await async_playwright().start()
-        extension_path = './internal-extension'
+
+        import os
+        if os.name == 'nt':  # Windows
+            extension_path = os.path.join(os.getcwd(), 'internal-extension')
+        else:
+            extension_path = './internal-extension'
+            
         self.context = await self.playwright.chromium.launch_persistent_context(
             "",
             headless=False,
