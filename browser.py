@@ -12,6 +12,7 @@ from config import HTML_PATH
 import requests
 import tldextract
 from urllib.parse import urlparse
+import os
 
 class BrowserAutomation:
     def __init__(self, session_id):
@@ -375,7 +376,6 @@ class BrowserAutomation:
                 "command": "fill_out_form_cache",
                 "parameters": gen_parameters,
             }
-            print("DONE")
             future.set_result(json.dumps(cached_command))
 
         asyncio.create_task(perform_form_fill())
@@ -396,13 +396,11 @@ class BrowserAutomation:
     async def start(self):
         future = asyncio.Future()
         self.playwright = await async_playwright().start()
-
-        import os
+        
         if os.name == 'nt':  # Windows
             extension_path = os.path.join(os.getcwd(), 'internal-extension')
         else:
             extension_path = './internal-extension'
-            
         self.context = await self.playwright.chromium.launch_persistent_context(
             "",
             headless=False,
