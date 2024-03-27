@@ -376,7 +376,6 @@ class BrowserAutomation:
                 "command": "fill_out_form_cache",
                 "parameters": gen_parameters,
             }
-            print("DONE")
             future.set_result(json.dumps(cached_command))
 
         asyncio.create_task(perform_form_fill())
