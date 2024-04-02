@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi import WebSocket, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv, find_dotenv
@@ -12,6 +13,7 @@ import sys
 import sentry_sdk
 from websocket import websocket_endpoint
 from shared import sessions
+from executor import ExecutorWebsocket
 
 # Import configurations from config.py
 from config import (
@@ -390,7 +392,16 @@ async def get_accessibility_tree(session_id: str, query: AccessibilityTreeQuery)
         return {"status": "Error", "message": "Invalid or missing session_id."}
 
 
-@app.websocket("/socket")(websocket_endpoint)
+# @app.websocket("/socket")(websocket_endpoint)
+
+async def get_websocket_executor(websocket: WebSocket):
+    return ExecutorWebsocket(websocket)
+
+@app.websocket("/execute")
+async def websocket_endpoint(executor: ExecutorWebsocket = Depends(get_websocket_executor)):
+    await executor.connect()
+    await executor.receive_and_send()
+
 
 @app.get("/")
 def read_root():
