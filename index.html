@@ -16,6 +16,8 @@
     // Parse the URL query parameters
         const queryParams = new URLSearchParams(window.location.search);
         const predefinedID = queryParams.get('predefinedID') || 'defaultID';
+
+        document.title = predefinedID;
         const firebaseConfig = {
             apiKey: "AIzaSyCwj4UmuEi1JBjyqyGXABfUd8K1tMFkgHM",
             authDomain: "web-agent-625d0.firebaseapp.com",

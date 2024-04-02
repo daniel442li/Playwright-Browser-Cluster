@@ -94,7 +94,7 @@ async def answer_multiple_choice(problem, quiz):
             },
         ],
         functions=[
-            {"name": "answer_multiple_choice", "parameters": main_schema_reasoning}
+            {"name": "answer_multiple_choice", "parameters": main_schema}
         ],
         function_call={"name": "answer_multiple_choice"},
         temperature=0,
@@ -105,7 +105,6 @@ async def answer_multiple_choice(problem, quiz):
     main_json = json.loads(main_json)
 
     print(main_json["answer"])
-    print(main_json["reasoning"])
 
     return main_json["answer"]
 

@@ -404,7 +404,7 @@ class BrowserAutomation:
         self.context = await self.playwright.chromium.launch_persistent_context(
             "",
             headless=False,
-            args=['--auto-select-tab-capture-source-by-title=Google',
+            args=['--auto-select-desktop-capture-source=undefined - Chromium',
                   f'--disable-extensions-except={extension_path}',
                   f'--load-extension={extension_path}',
                   '--enable-blink-features=AccessibilityObjectModel',
