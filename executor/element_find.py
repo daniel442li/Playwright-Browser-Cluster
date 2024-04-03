@@ -27,11 +27,16 @@ def process_elements_links_manual(data):
 
     interactable_elements = []
 
-    filtered_link_elements_str = list(filter(lambda element: "View" in json.loads(element)["name"], link_elements_str))
+    filtered_link_elements_str = list(filter(lambda element: "Go to " in json.loads(element)["name"], link_elements_str))
     interactable_elements.extend(filtered_link_elements_str)
 
-    
-
-    print(interactable_elements)
-
     return interactable_elements
+
+
+def process_elements_button_manual(data):
+    element_json = find_all_elements(data)
+
+    button_elements = list(filter(lambda element: element.get("role") == "button", element_json))
+    button_elements_str = [json.dumps(element) for element in button_elements]
+
+    return button_elements

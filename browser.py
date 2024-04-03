@@ -19,6 +19,7 @@ class BrowserAutomation:
         self.session_id = session_id
         self.playwright = None
         self.browser = None
+        self.context = None
         self.page = None
         self.ready = False
         self.running = False

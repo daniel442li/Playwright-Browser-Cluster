@@ -4,7 +4,7 @@ import json
 import time 
 from executor.tts import text_to_speech_instant
 from executor.label import workman_id_generator
-from executor.element_find import process_elements_links_manual
+from executor.element_find import process_elements_links_manual, process_elements_button_manual
 
 class ExecutorWebsocket:
     def __init__(self, websocket: WebSocket, id: str):
@@ -13,7 +13,7 @@ class ExecutorWebsocket:
         self.browser = sessions[str(id)]
         self._current_tf_id = 0
     
-    async def _get_modify_dom_and_update_current_tf_id_js_code(self):
+    def _get_modify_dom_and_update_current_tf_id_js_code(self):
         """Returns the JavaScript code that is used to modify the DOM adn return the updated current_tf_id."""
         # Future scope: Move to a js file, read it and return it
         return workman_id_generator
@@ -117,6 +117,19 @@ class ExecutorWebsocket:
 
         print("First element:", first_rect)
 
+        await page.wait_for_timeout(5)
+
+        await page.keyboard.press('Tab')
+
+        # Get the rectangle of the first focused element
+        second_rect = await page.evaluate("""() => {
+            const element = document.activeElement;
+            const rect = element.getBoundingClientRect();
+            return {x: rect.left + window.scrollX, y: rect.top + window.scrollY};
+        }""")
+
+
+
         while True:
             # Press Tab to focus on the next element
             await page.keyboard.press('Tab')
@@ -130,11 +143,8 @@ class ExecutorWebsocket:
                 return {x: rect.left + window.scrollX, y: rect.top + window.scrollY};
             }""")
 
-            # Log the x and y coordinates
-            #print(f"Focused element is at x: {current_rect['x']}, y: {current_rect['y']}")
-
             # Check if the current element's rect matches the first element's rect
-            if current_rect == first_rect:
+            if current_rect == first_rect or current_rect == second_rect:
                 await self.edit_text(page, "Scanning complete.")
                 text_to_speech_instant("Scanning complete.")
                 break
@@ -146,34 +156,122 @@ class ExecutorWebsocket:
             {"current_tf_id": self._current_tf_id},
         )
 
+    async def sort_by_y_remove_dupes(self, page, links):
+        accounts = []
+        for link in links:
+            link = json.loads(link)
+            workman_id = json.loads(link["keyshortcuts"])["workman_id"]
+            name = link["name"]
+            found_element = page.locator(f'[workman_id="{workman_id}"]')
+            element_coordinates = await found_element.bounding_box()
+            accounts.append({
+                "name": name,
+                "workman_id": workman_id,
+                "x": element_coordinates['x'],
+                "y": element_coordinates['y']
+            })
+
+        # Sort accounts by the Y coordinate
+        accounts.sort(key=lambda account: account['y'])
+
+        filtered_accounts = []
+        threshold = 5  # Define a threshold for y-coordinate difference
+        for i, account in enumerate(accounts):
+            if i == 0:
+                filtered_accounts.append(account)
+            else:
+                if abs(account['y'] - filtered_accounts[-1]['y']) > threshold:
+                    filtered_accounts.append(account)
+        accounts = filtered_accounts
+
+        accounts = [account for account in accounts if "Go to" in account["name"]]
+
+        return accounts
+
+    async def open_new_page_and_focus(self, page, element):
+        await self.edit_text(page, f"Opening link in new tab: {element['name']}")
+        text_to_speech_instant(f"Opening link in new tab: {element['name']}")
+        async with page.context.expect_page() as new_page_info:
+            # Trigger the action that opens the new page
+            found_element = page.locator(f'[workman_id="{element["workman_id"]}"]')
+            print("Account: " + element["workman_id"])
+            await found_element.highlight()
+            await found_element.scroll_into_view_if_needed()
+            time.sleep(2)
+            try:
+                await found_element.click(button='middle')
+            except Exception as e:
+                print(f"Failed to click on the element: {e}")
+                return
+
+            # Now you can use the new page object from the event
+            new_page = await new_page_info.value
+            await new_page.bring_to_front()
+            await self.edit_text(page, f"Opened a new page")
+            text_to_speech_instant(f"Opened a new page")
+
+        return new_page
+
+
     async def run_script(self, data):
         new_page_data = {
             "action": "new_page",
             "link": "https://www.linkedin.com/sales/search/people?query=(recentSearchParam%3A(id%3A3281715642%2CdoLogHistory%3Atrue)%2Cfilters%3AList((type%3ACOMPANY_HEADCOUNT%2Cvalues%3AList((id%3AB%2Ctext%3A1-10%2CselectionType%3AINCLUDED)))%2C(type%3ALEAD_INTERACTIONS%2Cvalues%3AList((id%3ALIVP%2Ctext%3AViewed%2520profile%2CselectionType%3AEXCLUDED)))%2C(type%3AFUNCTION%2Cvalues%3AList((id%3A25%2Ctext%3ASales%2CselectionType%3AINCLUDED)))%2C(type%3ASENIORITY_LEVEL%2Cvalues%3AList((id%3A310%2Ctext%3ACXO%2CselectionType%3AINCLUDED)))))&sessionId=GXzxjd0QQESuJBnLds3i9A%3D%3D"
         }
 
-
-
         linkedin_page = await self.handle_action(json.dumps(new_page_data))
-
-
         time.sleep(3)
         
         await self.check_login(linkedin_page, "https://www.linkedin.com/sales/login")
         
-        
-        time.sleep(5)
+        time.sleep(3)
 
-        #pages = await self.browser.pages()
-        #current_page = pages[-1]  # Gets the most recently opened page
-        #print(current_page.url)
         await self.load_all_content(linkedin_page)
-
+        
         await self.load_accessibility_tree(linkedin_page)
-
         tree = await self.get_accessibility_tree(linkedin_page)
 
         links = process_elements_links_manual(tree)
+
+        accounts = await self.sort_by_y_remove_dupes(linkedin_page, links)
+
+        print(accounts)
+
+        for account in accounts:
+            profile_page = await self.open_new_page_and_focus(linkedin_page, account)
+            await self.load_accessibility_tree(profile_page)
+            tree = await self.get_accessibility_tree(profile_page)
+
+            buttons = process_elements_button_manual(tree)
+
+            print(buttons)
+
+            for element in buttons:
+                if "Open actions" in element["name"]:
+                    target_id = json.loads(element["keyshortcuts"])["workman_id"]
+                    break
+                target_element = profile_page.locator(f'[workman_id="{target_id}"]')
+
+                try:
+                    await target_element.highlight()
+                    await target_element.scroll_into_view_if_needed()
+                except:
+                    await profile_page.close()
+                    continue
+                    
+
+                time.sleep(1)
+
+                try:
+                    await target_element.click()
+                except:
+                    await profile_page.close()
+                    continue
+            
+
+            time.sleep(100)
+
+            
 
 
 
