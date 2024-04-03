@@ -404,7 +404,7 @@ class BrowserAutomation:
         else:
             extension_path = './internal-extension'
         self.context = await self.playwright.chromium.launch_persistent_context(
-            "",
+            user_data_dir="./user_data",
             headless=False,
             args=[f'--auto-select-desktop-capture-source={self.session_id} - Chromium',
                   f'--disable-extensions-except={extension_path}',

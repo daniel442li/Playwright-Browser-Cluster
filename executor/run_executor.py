@@ -37,44 +37,93 @@ class ExecutorWebsocket:
         print("new page")
         link = data.get("link")
         page = await self.browser.new_page(link)
-        await self.insert_text(page, "Opening new page.")
+        await self.edit_text(page, "Opening new page.")
         return page
     
 
     async def edit_text(self, page, text):
-        js_code_update = f"""
-        document.getElementById('workman_status').innerText = "{text}";
+        js_code_check_and_update = f"""
+        var statusElement = document.getElementById('workman_status');
+        if (statusElement) {{
+            statusElement.innerText = "{text}";
+        }} else {{
+            var textContainer = document.createElement('div');
+            textContainer.id = 'workman_status';
+            textContainer.style.position = 'fixed';
+            textContainer.style.bottom = '20px';
+            textContainer.style.left = '50%';
+            textContainer.style.transform = 'translateX(-50%)';
+            textContainer.style.display = 'flex';
+            textContainer.style.alignItems = 'center';
+            textContainer.style.justifyContent = 'center';
+            textContainer.style.width = '350px';
+            textContainer.style.height = '50px';
+            textContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            textContainer.style.border = '3px solid black';
+            textContainer.style.borderRadius = '50px';
+            textContainer.style.color = 'white';
+            textContainer.style.fontSize = '16px';
+            textContainer.style.textAlign = 'center';
+            textContainer.style.padding = '10px';
+            textContainer.innerText = "{text}";
+            document.body.appendChild(textContainer);
+        }}
         """
-        await page.evaluate(js_code_update)
+        await page.evaluate(js_code_check_and_update)
     
+    async def check_login(self, page, login_page):
+        while True:
+            try:
+                await page.evaluate("""() => {
+                return 'so the page loads dynamically!';
+                }""")
+            except:
+                pass
 
-    async def insert_text(self, page, text):
-        # JavaScript code to create and style the text container
-        js_code = f"""
-        var textContainer = document.createElement('div');
-        textContainer.id = 'workman_status';
-        textContainer.style.position = 'fixed';
-        textContainer.style.bottom = '20px';
-        textContainer.style.left = '50%';
-        textContainer.style.transform = 'translateX(-50%)';
-        textContainer.style.display = 'flex';
-        textContainer.style.alignItems = 'center';
-        textContainer.style.justifyContent = 'center';
-        textContainer.style.width = '350px';
-        textContainer.style.height = '50px';
-        textContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        textContainer.style.border = '3px solid black';
-        textContainer.style.borderRadius = '50px';
-        textContainer.style.color = 'white';
-        textContainer.style.fontSize = '16px';
-        textContainer.style.textAlign = 'center';
-        textContainer.style.padding = '10px';
-        textContainer.innerText = "{text}";
-        document.body.appendChild(textContainer);
-        """
+            if page.url != login_page:
+                break
+            await self.edit_text(page, "I am stuck on the login page. Please login.")
+            text_to_speech_instant("I am stuck on the login page. Please login.")
+            
+            time.sleep(5)
+            print(page.url)
 
-        # Execute the JavaScript code in the page context
-        await page.evaluate(js_code)
+    async def load_all_content(self, page):
+        await self.edit_text(page, "I will now scan the whole site.")
+        text_to_speech_instant("I will now scan the whole site.")
+
+        # Press Tab once to focus on the first focusable element
+        await page.keyboard.press('Tab')
+
+        # Get the rectangle of the first focused element
+        first_rect = await page.evaluate("""() => {
+            const element = document.activeElement;
+            const rect = element.getBoundingClientRect();
+            return {x: rect.left + window.scrollX, y: rect.top + window.scrollY};
+        }""")
+
+        print("First element:", first_rect)
+
+        while True:
+            # Press Tab to focus on the next element
+            await page.keyboard.press('Tab')
+            # Optionally, add a small delay between each press to simulate more natural behavior
+            await page.wait_for_timeout(5)  # Wait for 50 milliseconds
+
+            # Get the rectangle of the currently focused element
+            current_rect = await page.evaluate("""() => {
+                const element = document.activeElement;
+                const rect = element.getBoundingClientRect();
+                return {x: rect.left + window.scrollX, y: rect.top + window.scrollY};
+            }""")
+
+            # Log the x and y coordinates
+            #print(f"Focused element is at x: {current_rect['x']}, y: {current_rect['y']}")
+
+            # Check if the current element's rect matches the first element's rect
+            if current_rect == first_rect:
+                print("Scanning complete, focus returned to the first element.")
+                break
 
     async def run_script(self, data):
         new_page_data = {
@@ -89,20 +138,15 @@ class ExecutorWebsocket:
 
         time.sleep(3)
         
-        while True:
-            await linkedin_page.evaluate("""() => {
-            return 'JavaScript injected successfully!';
-            }""")
-            if linkedin_page.url != "https://www.linkedin.com/sales/login":
-                break
-            await self.edit_text(linkedin_page, "I am stuck on the login page. Please login.")
-            text_to_speech_instant("I am stuck on the login page. Please login.")
-            
-            time.sleep(5)
-            print(linkedin_page.url)
+        await self.check_login(linkedin_page, "https://www.linkedin.com/sales/login")
         
-        print(linkedin_page.url)
-        print('we out the mud')
+        
+        time.sleep(5)
+
+        #pages = await self.browser.pages()
+        #current_page = pages[-1]  # Gets the most recently opened page
+        #print(current_page.url)
+        await self.load_all_content(linkedin_page)
 
     
 
