@@ -389,6 +389,8 @@ class BrowserAutomation:
         if self.recorder_page is not None:
             await self.recorder_page.close()
             self.recorder_page = None
+        
+        
 
         self.recorder_page = await self.context.new_page()
         await self.recorder_page.goto(HTML_PATH + "=" + self.session_id)
@@ -697,37 +699,10 @@ class BrowserAutomation:
             element_id = element["tf623_id"]
             print(element_id)
             element = self.page.locator(f'[tf623_id="{element_id}"]')
-            #await element.click()
-            # js_code = f"""
-            # const element = document.querySelector('[tf623_id="{element_id}"]');
-            # if (element) {{
-            #     element.style.border = "2px solid red";
-            # }}
-            # """
-            # await self.page.evaluate(js_code)
 
-        
-
-        # Single Element
-        # element_id = response_dict[query]["tf623_id"]
-        # element = self.page.locator(f'[tf623_id="{element_id}"]')
-
-
-
-        # print(element)
-
-        # js_code = f"""
-        # const element = document.querySelector('[tf623_id="{element_id}"]');
-        # if (element) {{
-        #     element.style.border = "2px solid red";
-        # }}
-        # """
-
-        # # Execute the JavaScript code in the context of the page to add a red border
-        # await self.page.evaluate(js_code)
-
-        
-
-        #await element.type("Oreo Separation Pump Gun JoergSprave", delay=75)
-
+    async def new_page(self, link):
+        self.update_activity_time()
+        new_page = await self.page.context.new_page()
+        await new_page.goto(link)
+        return new_page
 

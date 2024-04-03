@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from fastapi import WebSocket, Depends
+from fastapi import WebSocket, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv, find_dotenv
@@ -394,8 +394,10 @@ async def get_accessibility_tree(session_id: str, query: AccessibilityTreeQuery)
 
 # @app.websocket("/socket")(websocket_endpoint)
 
-async def get_websocket_executor(websocket: WebSocket):
-    return ExecutorWebsocket(websocket)
+# Adjust the dependency function to accept an ID
+async def get_websocket_executor(websocket: WebSocket, id: str = Query(...)):
+    # Now the ExecutorWebsocket is initialized with both the WebSocket and the ID
+    return ExecutorWebsocket(websocket, id)
 
 @app.websocket("/execute")
 async def websocket_endpoint(executor: ExecutorWebsocket = Depends(get_websocket_executor)):
