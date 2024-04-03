@@ -4,6 +4,8 @@ import json
 import time 
 from executor.tts import text_to_speech_instant
 from executor.label import workman_id_generator
+from executor.element_find import process_elements_links_manual
+
 class ExecutorWebsocket:
     def __init__(self, websocket: WebSocket, id: str):
         print(sessions)
@@ -169,7 +171,11 @@ class ExecutorWebsocket:
 
         await self.load_accessibility_tree(linkedin_page)
 
-        await self.get_accessibility_tree(linkedin_page)
+        tree = await self.get_accessibility_tree(linkedin_page)
+
+        links = process_elements_links_manual(tree)
+
+
 
 
 
