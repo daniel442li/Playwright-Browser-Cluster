@@ -163,7 +163,6 @@ class ExecutorWebsocket:
     async def sort_by_y_remove_dupes(self, page, links):
         accounts = []
         for link in links:
-            link = json.loads(link)
             workman_id = json.loads(link["keyshortcuts"])["workman_id"]
             name = link["name"]
             found_element = page.locator(f'[workman_id="{workman_id}"]')
@@ -214,10 +213,14 @@ class ExecutorWebsocket:
 
         return new_page
 
+    async def filter_elements(self, elements, filter):
+        return [element for element in elements if filter in element["name"]]
 
-    async def click_button_based_on_selector(self, page, button_elements, filter):
+    async def click_element_based_on_selector(self, page, elements, filter):
+        await self.edit_text(page, f"Clicking on the {filter} button")
+        text_to_speech_instant(f"Clicking on the {filter} button")
         try:
-            target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in button_elements if filter in element["name"])
+            target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in elements if filter in element["name"])
             target_element = page.locator(f'[workman_id="{target_id}"]')
         except StopIteration:
             print(f"No element found with filter: {filter}")
@@ -251,19 +254,32 @@ class ExecutorWebsocket:
         tree = await self.get_accessibility_tree(linkedin_page)
 
         links = process_elements_links_manual(tree)
+        relevant_links = await self.filter_elements(links, "Go to")
 
-        accounts = await self.sort_by_y_remove_dupes(linkedin_page, links)
+        
 
-        print(accounts)
+        accounts = await self.sort_by_y_remove_dupes(linkedin_page, relevant_links)
 
         for account in accounts:
             profile_page = await self.open_new_page_and_focus(linkedin_page, account)
+
             await self.load_accessibility_tree(profile_page)
             tree = await self.get_accessibility_tree(profile_page)
-
             buttons = process_elements_button_manual(tree)
 
-            result = await self.click_button_based_on_selector(profile_page, buttons, "Open actions")
+            result = await self.click_element_based_on_selector(profile_page, buttons, "Open actions")
+
+            if not result:
+                await profile_page.close()
+                continue
+
+            await self.load_accessibility_tree(profile_page)
+            tree = await self.get_accessibility_tree(profile_page)
+            links = process_elements_links_manual(tree)
+
+            print(links)
+
+            result = await self.click_element_based_on_selector(profile_page, links, "View LinkedIn profile")
 
             if not result:
                 await profile_page.close()
