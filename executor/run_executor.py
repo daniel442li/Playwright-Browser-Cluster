@@ -154,7 +154,6 @@ class ExecutorWebsocket:
                 break
     
     async def load_accessibility_tree(self, page):
-        self._current_tf_id = 0
         self._current_tf_id = await page.evaluate(
             self._get_modify_dom_and_update_current_tf_id_js_code(),
             {"current_tf_id": self._current_tf_id},
@@ -221,6 +220,7 @@ class ExecutorWebsocket:
         text_to_speech_instant(f"Clicking on the {filter} button")
         try:
             target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in elements if filter in element["name"])
+            print(f"Target ID: {target_id}")
             target_element = page.locator(f'[workman_id="{target_id}"]')
         except StopIteration:
             print(f"No element found with filter: {filter}")
@@ -229,11 +229,55 @@ class ExecutorWebsocket:
         try:
             await target_element.highlight()
             await target_element.scroll_into_view_if_needed()
+        except:
+            pass
+
+        try:
             time.sleep(1)
             await target_element.click()
             return "Success"
         except:
             await page.close()
+    
+
+    async def click_link_based_on_selector(self, page, elements, filter):
+        await self.edit_text(page, f"Clicking on the {filter} button")
+        text_to_speech_instant(f"Clicking on the {filter} button")
+        try:
+            target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in elements if filter in element["name"])
+            print(f"Target ID: {target_id}")
+            target_element = page.locator(f'[workman_id="{target_id}"]')
+        except StopIteration:
+            print(f"No element found with filter: {filter}")
+            return None
+
+        try:
+            await target_element.highlight()
+            await target_element.scroll_into_view_if_needed()
+        except:
+            pass
+
+        try:
+            time.sleep(1)
+            new_page_future = page.context.wait_for_event('page')
+            await target_element.click()
+
+            new_page = await new_page_future
+            await new_page.bring_to_front()
+            return new_page
+        except:
+            await page.close()
+    
+    async def scrape_information(self, page, selector):
+        try:
+            element_by_class = page.locator(selector)
+            information = await element_by_class.text_content().first
+            return information
+        except:
+            return ''
+        
+
+
                     
     async def run_script(self, data):
         new_page_data = {
@@ -246,7 +290,7 @@ class ExecutorWebsocket:
         
         await self.check_login(linkedin_page, "https://www.linkedin.com/sales/login")
         
-        time.sleep(3)
+        time.sleep(15)
 
         await self.load_all_content(linkedin_page)
         
@@ -272,18 +316,42 @@ class ExecutorWebsocket:
             if not result:
                 await profile_page.close()
                 continue
+            
+            time.sleep(1)
 
             await self.load_accessibility_tree(profile_page)
             tree = await self.get_accessibility_tree(profile_page)
             links = process_elements_links_manual(tree)
-
             print(links)
 
-            result = await self.click_element_based_on_selector(profile_page, links, "View LinkedIn profile")
+            # third_page_future = profile_page.context.wait_for_event('page')
 
-            if not result:
-                await profile_page.close()
-                continue
+            direct_profile_page = await self.click_link_based_on_selector(profile_page, links, "View LinkedIn profile")
+
+            linkedin_page.close()
+            
+            
+            current_url = direct_profile_page.url
+            
+            name = await self.scrape_information(direct_profile_page, "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words")
+
+            title = await self.scrape_information(direct_profile_page, ".text-body-medium.break-words")
+
+            location = await self.scrape_information(direct_profile_page, ".text-body-small.inline.t-black--light.break-words")
+
+            description = await self.scrape_information(direct_profile_page, "div.display-flex.ph5.pv3")
+
+
+
+            time.sleep(100)
+
+            # if not result:
+            #     print("RIP")
+            #     await profile_page.close()
+            #     continue
+            # else:
+            #     third_page = await third_page_future
+            #     await third_page.bring_to_front()
 
             
             time.sleep(100)
