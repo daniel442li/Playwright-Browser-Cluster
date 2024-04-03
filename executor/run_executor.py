@@ -2,7 +2,7 @@ from fastapi import WebSocket
 from shared import sessions
 import json
 import time 
-
+from executor.tts import text_to_speech_instant
 class ExecutorWebsocket:
     def __init__(self, websocket: WebSocket, id: str):
         print(sessions)
@@ -37,8 +37,44 @@ class ExecutorWebsocket:
         print("new page")
         link = data.get("link")
         page = await self.browser.new_page(link)
+        await self.insert_text(page, "Opening new page.")
         return page
     
+
+    async def edit_text(self, page, text):
+        js_code_update = f"""
+        document.getElementById('workman_status').innerText = "{text}";
+        """
+        await page.evaluate(js_code_update)
+    
+
+    async def insert_text(self, page, text):
+        # JavaScript code to create and style the text container
+        js_code = f"""
+        var textContainer = document.createElement('div');
+        textContainer.id = 'workman_status';
+        textContainer.style.position = 'fixed';
+        textContainer.style.bottom = '20px';
+        textContainer.style.left = '50%';
+        textContainer.style.transform = 'translateX(-50%)';
+        textContainer.style.display = 'flex';
+        textContainer.style.alignItems = 'center';
+        textContainer.style.justifyContent = 'center';
+        textContainer.style.width = '350px';
+        textContainer.style.height = '50px';
+        textContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        textContainer.style.border = '3px solid black';
+        textContainer.style.borderRadius = '50px';
+        textContainer.style.color = 'white';
+        textContainer.style.fontSize = '16px';
+        textContainer.style.textAlign = 'center';
+        textContainer.style.padding = '10px';
+        textContainer.innerText = "{text}";
+        document.body.appendChild(textContainer);
+        """
+
+        # Execute the JavaScript code in the page context
+        await page.evaluate(js_code)
 
     async def run_script(self, data):
         new_page_data = {
@@ -57,11 +93,15 @@ class ExecutorWebsocket:
             await linkedin_page.evaluate("""() => {
             return 'JavaScript injected successfully!';
             }""")
-            if linkedin_page.url != "https://www.linkedin.com/sales":
+            if linkedin_page.url != "https://www.linkedin.com/sales/login":
                 break
-            time.sleep(3)
+            await self.edit_text(linkedin_page, "I am stuck on the login page. Please login.")
+            text_to_speech_instant("I am stuck on the login page. Please login.")
+            
+            time.sleep(5)
             print(linkedin_page.url)
         
+        print(linkedin_page.url)
         print('we out the mud')
 
     

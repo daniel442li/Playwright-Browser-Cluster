@@ -13,7 +13,7 @@ import sys
 import sentry_sdk
 from websocket import websocket_endpoint
 from shared import sessions
-from executor import ExecutorWebsocket
+from executor.run_executor import ExecutorWebsocket
 
 # Import configurations from config.py
 from config import (
