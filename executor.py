@@ -1,6 +1,7 @@
 from fastapi import WebSocket
 from shared import sessions
 import json
+import time 
 
 class ExecutorWebsocket:
     def __init__(self, websocket: WebSocket, id: str):
@@ -27,7 +28,8 @@ class ExecutorWebsocket:
             'run_script': self.run_script,
         }
         if action in action_handlers:
-            await action_handlers[action](data)
+            returned_value = await action_handlers[action](data)
+            return returned_value
         else:
             await self.websocket.send_text("Error: Invalid action.")
 
@@ -47,6 +49,20 @@ class ExecutorWebsocket:
 
 
         linkedin_page = await self.handle_action(json.dumps(new_page_data))
+
+
+        time.sleep(3)
+        
+        while True:
+            await linkedin_page.evaluate("""() => {
+            return 'JavaScript injected successfully!';
+            }""")
+            if linkedin_page.url != "https://www.linkedin.com/sales":
+                break
+            time.sleep(3)
+            print(linkedin_page.url)
+        
+        print('we out the mud')
 
     
 

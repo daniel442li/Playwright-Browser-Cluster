@@ -392,8 +392,8 @@ class BrowserAutomation:
         
         
 
-        self.recorder_page = await self.context.new_page()
-        await self.recorder_page.goto(HTML_PATH + "=" + self.session_id)
+        # self.recorder_page = await self.context.new_page()
+        # await self.recorder_page.goto(HTML_PATH + "=" + self.session_id)
 
     async def start(self):
         future = asyncio.Future()
