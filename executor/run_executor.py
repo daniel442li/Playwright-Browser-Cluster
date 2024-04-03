@@ -3,11 +3,18 @@ from shared import sessions
 import json
 import time 
 from executor.tts import text_to_speech_instant
+from executor.label import workman_id_generator
 class ExecutorWebsocket:
     def __init__(self, websocket: WebSocket, id: str):
         print(sessions)
         self.websocket = websocket
         self.browser = sessions[str(id)]
+        self._current_tf_id = 0
+    
+    def _get_modify_dom_and_update_current_tf_id_js_code(self):
+        """Returns the JavaScript code that is used to modify the DOM adn return the updated current_tf_id."""
+        # Future scope: Move to a js file, read it and return it
+        return workman_id_generator
 
     async def connect(self):
         await self.websocket.accept()
@@ -122,8 +129,16 @@ class ExecutorWebsocket:
 
             # Check if the current element's rect matches the first element's rect
             if current_rect == first_rect:
-                print("Scanning complete, focus returned to the first element.")
+                await self.edit_text(page, "Scanning complete.")
+                text_to_speech_instant("Scanning complete.")
                 break
+    
+    async def load_accessibility_tree(self, page):
+        self._current_tf_id = 0
+        self._current_tf_id = await page.evaluate(
+            self._get_modify_dom_and_update_current_tf_id_js_code(),
+            {"current_tf_id": self._current_tf_id},
+        )
 
     async def run_script(self, data):
         new_page_data = {
@@ -147,6 +162,9 @@ class ExecutorWebsocket:
         #current_page = pages[-1]  # Gets the most recently opened page
         #print(current_page.url)
         await self.load_all_content(linkedin_page)
+
+
+
 
     
 
