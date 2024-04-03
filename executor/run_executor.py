@@ -11,10 +11,14 @@ class ExecutorWebsocket:
         self.browser = sessions[str(id)]
         self._current_tf_id = 0
     
-    def _get_modify_dom_and_update_current_tf_id_js_code(self):
+    async def _get_modify_dom_and_update_current_tf_id_js_code(self):
         """Returns the JavaScript code that is used to modify the DOM adn return the updated current_tf_id."""
         # Future scope: Move to a js file, read it and return it
         return workman_id_generator
+    
+    async def get_accessibility_tree(self, page, interesting=True):
+        snapshot = await page.accessibility.snapshot(interesting_only=True)
+        return snapshot
 
     async def connect(self):
         await self.websocket.accept()
@@ -162,6 +166,12 @@ class ExecutorWebsocket:
         #current_page = pages[-1]  # Gets the most recently opened page
         #print(current_page.url)
         await self.load_all_content(linkedin_page)
+
+        await self.load_accessibility_tree(linkedin_page)
+
+        await self.get_accessibility_tree(linkedin_page)
+
+
 
 
 
