@@ -5,6 +5,7 @@ import time
 from executor.tts import text_to_speech_instant
 from executor.label import workman_id_generator
 from executor.element_find import process_elements_links_manual, process_elements_button_manual
+from executor.schemas import *
 
 class ExecutorWebsocket:
     def __init__(self, websocket: WebSocket, id: str):
@@ -78,6 +79,7 @@ class ExecutorWebsocket:
             textContainer.style.color = 'white';
             textContainer.style.fontSize = '16px';
             textContainer.style.textAlign = 'center';
+            textContainer.style.zIndex = '1000';
             textContainer.style.padding = '10px';
             textContainer.innerText = "{text}";
             document.body.appendChild(textContainer);
@@ -215,11 +217,16 @@ class ExecutorWebsocket:
     async def filter_elements(self, elements, filter):
         return [element for element in elements if filter in element["name"]]
 
-    async def click_element_based_on_selector(self, page, elements, filter):
+    async def click_button_based_on_selector(self, page, filter):
         await self.edit_text(page, f"Clicking on the {filter} button")
         text_to_speech_instant(f"Clicking on the {filter} button")
+
+        await self.load_accessibility_tree(page)
+        tree = await self.get_accessibility_tree(page)
+        buttons = process_elements_button_manual(tree)
+
         try:
-            target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in elements if filter in element["name"])
+            target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in buttons if filter in element["name"])
             print(f"Target ID: {target_id}")
             target_element = page.locator(f'[workman_id="{target_id}"]')
         except StopIteration:
@@ -240,11 +247,14 @@ class ExecutorWebsocket:
             await page.close()
     
 
-    async def click_link_based_on_selector(self, page, elements, filter):
+    async def click_link_based_on_selector(self, page, filter):
+        await self.load_accessibility_tree(page)
+        tree = await self.get_accessibility_tree(page)
+        links = process_elements_links_manual(tree)
         await self.edit_text(page, f"Clicking on the {filter} button")
         text_to_speech_instant(f"Clicking on the {filter} button")
         try:
-            target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in elements if filter in element["name"])
+            target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in links if filter in element["name"])
             print(f"Target ID: {target_id}")
             target_element = page.locator(f'[workman_id="{target_id}"]')
         except StopIteration:
@@ -270,14 +280,11 @@ class ExecutorWebsocket:
     
     async def scrape_information(self, page, selector):
         try:
-            element_by_class = page.locator(selector)
-            information = await element_by_class.text_content().first
+            element_by_class = page.locator(selector).first
+            information = await element_by_class.text_content()
             return information
         except:
             return ''
-        
-
-
                     
     async def run_script(self, data):
         new_page_data = {
@@ -290,7 +297,7 @@ class ExecutorWebsocket:
         
         await self.check_login(linkedin_page, "https://www.linkedin.com/sales/login")
         
-        time.sleep(15)
+        time.sleep(3)
 
         await self.load_all_content(linkedin_page)
         
@@ -307,11 +314,7 @@ class ExecutorWebsocket:
         for account in accounts:
             profile_page = await self.open_new_page_and_focus(linkedin_page, account)
 
-            await self.load_accessibility_tree(profile_page)
-            tree = await self.get_accessibility_tree(profile_page)
-            buttons = process_elements_button_manual(tree)
-
-            result = await self.click_element_based_on_selector(profile_page, buttons, "Open actions")
+            result = await self.click_button_based_on_selector(profile_page, "Open actions")
 
             if not result:
                 await profile_page.close()
@@ -319,18 +322,17 @@ class ExecutorWebsocket:
             
             time.sleep(1)
 
-            await self.load_accessibility_tree(profile_page)
-            tree = await self.get_accessibility_tree(profile_page)
-            links = process_elements_links_manual(tree)
-            print(links)
+            direct_profile_page = await self.click_link_based_on_selector(profile_page, "View LinkedIn profile")
 
-            # third_page_future = profile_page.context.wait_for_event('page')
+            await linkedin_page.close()
 
-            direct_profile_page = await self.click_link_based_on_selector(profile_page, links, "View LinkedIn profile")
 
-            linkedin_page.close()
+            time.sleep(2)
+
+            await self.edit_text(direct_profile_page, "Opened the whole Linkedin profile.")
+            text_to_speech_instant("Opened the whole Linkedin profile.")
             
-            
+
             current_url = direct_profile_page.url
             
             name = await self.scrape_information(direct_profile_page, "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words")
@@ -342,6 +344,72 @@ class ExecutorWebsocket:
             description = await self.scrape_information(direct_profile_page, "div.display-flex.ph5.pv3")
 
 
+            result = await self.click_button_based_on_selector(direct_profile_page, "More actions")
+
+            if not result:
+                await direct_profile_page.close()
+                continue
+
+            result = await self.click_button_based_on_selector(direct_profile_page, "to connect")
+
+            if not result:
+                await direct_profile_page.close()
+                continue
+
+            result = await self.click_button_based_on_selector(direct_profile_page, "Add a note")
+
+            if not result:
+                await direct_profile_page.close()
+                continue
+            
+            await self.edit_text(direct_profile_page, "I will now send a personalized message.")
+            text_to_speech_instant("I will send a personalized message.")
+
+            information = title + description
+            user_info = user_information(information, main_schema)
+            
+            first_name = name_information(name)
+
+            first_name = first_name["first_name"]
+
+            industry = user_info["industry"].lower()
+
+            software = software_answer(industry)
+            soft = software["software"]
+
+            message = f"Hi {first_name},"
+            message2 = f"We build AI digital workers."
+            message3 = f"These workers are experts in {industry} and can operate software such as {soft}."  
+            message4 = "We're looking for limited pilot partners."
+            message5 = "Let's chat."
+            message6 = "- Sent by a Sales Workman"
+
+            await direct_profile_page.keyboard.type(message, delay=20)
+
+            await direct_profile_page.keyboard.press('Enter')
+
+            await direct_profile_page.keyboard.type(message2, delay=20)
+
+            await direct_profile_page.keyboard.press('Enter')
+
+            await direct_profile_page.keyboard.type(message3, delay=20)
+
+            await direct_profile_page.keyboard.press('Enter')
+
+            await direct_profile_page.keyboard.type(message4, delay=20)
+
+            await direct_profile_page.keyboard.press('Enter')
+
+            await direct_profile_page.keyboard.type(message5, delay=20)
+
+            await direct_profile_page.keyboard.press('Enter')
+
+            await direct_profile_page.keyboard.type(message6, delay=20)
+
+
+
+
+            print("DONE")
 
             time.sleep(100)
 
