@@ -51,6 +51,7 @@ class ExecutorWebsocket:
         link = data.get("link")
         page = await self.browser.new_page(link)
         await self.edit_text(page, "Opening new page.")
+        text_to_speech_instant("Opening new page.")
         return page
     
 
@@ -143,8 +144,11 @@ class ExecutorWebsocket:
                 return {x: rect.left + window.scrollX, y: rect.top + window.scrollY};
             }""")
 
+            if current_rect['x'] < 50 and current_rect['y'] < 50:
+                print("Current element with x and y less than 50:", current_rect)
+
             # Check if the current element's rect matches the first element's rect
-            if current_rect == first_rect or current_rect == second_rect:
+            if (abs(current_rect['x'] - first_rect['x']) <= 2 and abs(current_rect['y'] - first_rect['y']) <= 2) or (abs(current_rect['x'] - second_rect['x']) <= 2 and abs(current_rect['y'] - second_rect['y']) <= 2):
                 await self.edit_text(page, "Scanning complete.")
                 text_to_speech_instant("Scanning complete.")
                 break
@@ -189,22 +193,20 @@ class ExecutorWebsocket:
         return accounts
 
     async def open_new_page_and_focus(self, page, element):
+        found_element = page.locator(f'[workman_id="{element["workman_id"]}"]')
+        print("Account: " + element["workman_id"])
+        await found_element.highlight()
+        await found_element.scroll_into_view_if_needed()
+        
         await self.edit_text(page, f"Opening link in new tab: {element['name']}")
         text_to_speech_instant(f"Opening link in new tab: {element['name']}")
+
         async with page.context.expect_page() as new_page_info:
-            # Trigger the action that opens the new page
-            found_element = page.locator(f'[workman_id="{element["workman_id"]}"]')
-            print("Account: " + element["workman_id"])
-            await found_element.highlight()
-            await found_element.scroll_into_view_if_needed()
-            time.sleep(2)
             try:
                 await found_element.click(button='middle')
             except Exception as e:
                 print(f"Failed to click on the element: {e}")
                 return
-
-            # Now you can use the new page object from the event
             new_page = await new_page_info.value
             await new_page.bring_to_front()
             await self.edit_text(page, f"Opened a new page")
@@ -213,6 +215,23 @@ class ExecutorWebsocket:
         return new_page
 
 
+    async def click_button_based_on_selector(self, page, button_elements, filter):
+        try:
+            target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in button_elements if filter in element["name"])
+            target_element = page.locator(f'[workman_id="{target_id}"]')
+        except StopIteration:
+            print(f"No element found with filter: {filter}")
+            return None
+
+        try:
+            await target_element.highlight()
+            await target_element.scroll_into_view_if_needed()
+            time.sleep(1)
+            await target_element.click()
+            return "Success"
+        except:
+            await page.close()
+                    
     async def run_script(self, data):
         new_page_data = {
             "action": "new_page",
@@ -244,31 +263,13 @@ class ExecutorWebsocket:
 
             buttons = process_elements_button_manual(tree)
 
-            print(buttons)
+            result = await self.click_button_based_on_selector(profile_page, buttons, "Open actions")
 
-            for element in buttons:
-                if "Open actions" in element["name"]:
-                    target_id = json.loads(element["keyshortcuts"])["workman_id"]
-                    break
-                target_element = profile_page.locator(f'[workman_id="{target_id}"]')
+            if not result:
+                await profile_page.close()
+                continue
 
-                try:
-                    await target_element.highlight()
-                    await target_element.scroll_into_view_if_needed()
-                except:
-                    await profile_page.close()
-                    continue
-                    
-
-                time.sleep(1)
-
-                try:
-                    await target_element.click()
-                except:
-                    await profile_page.close()
-                    continue
             
-
             time.sleep(100)
 
             
