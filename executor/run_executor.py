@@ -87,7 +87,7 @@ class ExecutorWebsocket:
         """
         await page.evaluate(js_code_check_and_update)
     
-    async def check_login(self, page, login_page):
+    async def check_login(self, page, login_page_selector):
         while True:
             try:
                 await page.evaluate("""() => {
@@ -96,10 +96,12 @@ class ExecutorWebsocket:
             except:
                 pass
 
-            if page.url != login_page:
+            if login_page_selector in page.url:
+                await self.edit_text(page, "I am stuck on the login page. Please login.")
+                text_to_speech_instant("I am stuck on the login page. Please login.")
+            else:
                 break
-            await self.edit_text(page, "I am stuck on the login page. Please login.")
-            text_to_speech_instant("I am stuck on the login page. Please login.")
+
             
             time.sleep(5)
             print(page.url)
@@ -217,16 +219,22 @@ class ExecutorWebsocket:
     async def filter_elements(self, elements, filter):
         return [element for element in elements if filter in element["name"]]
 
-    async def click_button_based_on_selector(self, page, filter):
+    async def click_button_based_on_selector(self, page, filter, exact=False):
         await self.edit_text(page, f"Clicking on the {filter} button")
         text_to_speech_instant(f"Clicking on the {filter} button")
 
         await self.load_accessibility_tree(page)
         tree = await self.get_accessibility_tree(page)
+
+        with open("tree.json", "w") as f:
+            json.dump(tree, f)
         buttons = process_elements_button_manual(tree)
 
         try:
-            target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in buttons if filter in element["name"])
+            if exact:
+                target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in buttons if element["name"] == filter)
+            else:
+                target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in buttons if filter in element["name"])
             print(f"Target ID: {target_id}")
             target_element = page.locator(f'[workman_id="{target_id}"]')
         except StopIteration:
@@ -247,14 +255,17 @@ class ExecutorWebsocket:
             await page.close()
     
 
-    async def click_link_based_on_selector(self, page, filter):
+    async def click_link_based_on_selector(self, page, filter, exact=False):
         await self.load_accessibility_tree(page)
         tree = await self.get_accessibility_tree(page)
         links = process_elements_links_manual(tree)
         await self.edit_text(page, f"Clicking on the {filter} button")
         text_to_speech_instant(f"Clicking on the {filter} button")
         try:
-            target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in links if filter in element["name"])
+            if exact:
+                target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in links if element["name"] == filter)
+            else:
+                target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in links if filter in element["name"])
             print(f"Target ID: {target_id}")
             target_element = page.locator(f'[workman_id="{target_id}"]')
         except StopIteration:
@@ -285,17 +296,34 @@ class ExecutorWebsocket:
             return information
         except:
             return ''
+        
+    async def speak_information(self, page, information):
+        await self.edit_text(page, information)
+        text_to_speech_instant(information)
+
                     
     async def run_script(self, data):
+        new_page_data_notion = {
+            "action": "new_page",
+            "link": "https://www.notion.so/9f7c1f0e5d0641bdb8e53ba28c064b5b?v=f386299c773e417bb424d585bb13af82"
+        }
+
         new_page_data = {
             "action": "new_page",
             "link": "https://www.linkedin.com/sales/search/people?query=(recentSearchParam%3A(id%3A3281715642%2CdoLogHistory%3Atrue)%2Cfilters%3AList((type%3ACOMPANY_HEADCOUNT%2Cvalues%3AList((id%3AB%2Ctext%3A1-10%2CselectionType%3AINCLUDED)))%2C(type%3ALEAD_INTERACTIONS%2Cvalues%3AList((id%3ALIVP%2Ctext%3AViewed%2520profile%2CselectionType%3AEXCLUDED)))%2C(type%3AFUNCTION%2Cvalues%3AList((id%3A25%2Ctext%3ASales%2CselectionType%3AINCLUDED)))%2C(type%3ASENIORITY_LEVEL%2Cvalues%3AList((id%3A310%2Ctext%3ACXO%2CselectionType%3AINCLUDED)))))&sessionId=GXzxjd0QQESuJBnLds3i9A%3D%3D"
         }
 
+
+        notion_page = await self.handle_action(json.dumps(new_page_data_notion))
+
+        time.sleep(3)
+        #await self.check_login(notion_page, "v=")
+
+        
         linkedin_page = await self.handle_action(json.dumps(new_page_data))
         time.sleep(3)
         
-        await self.check_login(linkedin_page, "https://www.linkedin.com/sales/login")
+        await self.check_login(linkedin_page, "sales/login")
         
         time.sleep(3)
 
@@ -328,11 +356,7 @@ class ExecutorWebsocket:
 
 
             time.sleep(2)
-
-            await self.edit_text(direct_profile_page, "Opened the whole Linkedin profile.")
-            text_to_speech_instant("Opened the whole Linkedin profile.")
             
-
             current_url = direct_profile_page.url
             
             name = await self.scrape_information(direct_profile_page, "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words")
@@ -362,8 +386,7 @@ class ExecutorWebsocket:
                 await direct_profile_page.close()
                 continue
             
-            await self.edit_text(direct_profile_page, "I will now send a personalized message.")
-            text_to_speech_instant("I will send a personalized message.")
+            await self.speak_information(direct_profile_page, "I will now send a personalized message.")
 
             information = title + description
             user_info = user_information(information, main_schema)
@@ -373,6 +396,7 @@ class ExecutorWebsocket:
             first_name = first_name["first_name"]
 
             industry = user_info["industry"].lower()
+            position = user_info["position"]
 
             software = software_answer(industry)
             soft = software["software"]
@@ -407,22 +431,67 @@ class ExecutorWebsocket:
             await direct_profile_page.keyboard.type(message6, delay=20)
 
 
+            time.sleep(3)
+            await notion_page.bring_to_front()
+            await direct_profile_page.close()
 
 
-            print("DONE")
-
-            time.sleep(100)
-
-            # if not result:
-            #     print("RIP")
-            #     await profile_page.close()
-            #     continue
-            # else:
-            #     third_page = await third_page_future
-            #     await third_page.bring_to_front()
+            result = await self.click_button_based_on_selector(notion_page, "New", True) 
 
             
-            time.sleep(100)
+
+
+            await notion_page.keyboard.type(name, delay=20)
+            time.sleep(1)
+            
+            await notion_page.keyboard.press('Tab')
+            time.sleep(1)
+
+            await notion_page.keyboard.type(current_url, delay=20)
+            time.sleep(1)
+
+            await notion_page.keyboard.press('Tab')
+            time.sleep(1)
+
+            print(location)
+            location = location.replace("\n", "")
+            location = location.strip()
+            await notion_page.keyboard.type(location, delay=20)
+            
+
+            await notion_page.keyboard.press('Tab')
+            time.sleep(1)
+
+            await notion_page.keyboard.type(industry, delay=20)
+            time.sleep(1)
+
+            await notion_page.keyboard.press('Tab')
+
+            time.sleep(1)
+            await notion_page.keyboard.type(position, delay=20)
+
+            time.sleep(1)
+            await notion_page.keyboard.press('Tab')
+
+            time.sleep(1)
+
+            await notion_page.keyboard.type(message, delay=20)
+            await notion_page.keyboard.type(' ')
+            await notion_page.keyboard.type(message2, delay=20)
+            await notion_page.keyboard.type(' ')
+            await notion_page.keyboard.type(message3, delay=20)
+            await notion_page.keyboard.type(' ')
+            await notion_page.keyboard.type(message4, delay=20)
+            await notion_page.keyboard.type(' ')
+            await notion_page.keyboard.type(message5, delay=20)
+
+
+            result = await self.click_button_based_on_selector(notion_page, "Close", False) 
+
+            await self.speak_information(notion_page, "I have added the information to the Notion page.")
+
+            await linkedin_page.bring_to_front()
+            
 
             
 

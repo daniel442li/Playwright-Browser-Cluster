@@ -7,3 +7,4 @@ venv/
 .env
 *.pdf
 user_data/
+*.json
