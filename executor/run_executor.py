@@ -306,7 +306,7 @@ class ExecutorWebsocket:
     async def pause_script(self, data):
         await self.browser.context.close()
         print("Browser closed.")
-        sessions.pop(str(data.get("id")))
+        del sessions[str(data.get("id"))]
 
 
     async def run_script(self, data):
