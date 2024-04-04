@@ -352,7 +352,7 @@ class ExecutorWebsocket:
 
             direct_profile_page = await self.click_link_based_on_selector(profile_page, "View LinkedIn profile")
 
-            await linkedin_page.close()
+            await profile_page.close()
 
 
             time.sleep(2)
@@ -431,7 +431,10 @@ class ExecutorWebsocket:
             await direct_profile_page.keyboard.type(message6, delay=20)
 
 
-            time.sleep(3)
+            await self.click_button_based_on_selector(direct_profile_page, "Send now", False)
+
+            time.sleep(2)
+
             await notion_page.bring_to_front()
             await direct_profile_page.close()
 
@@ -484,6 +487,8 @@ class ExecutorWebsocket:
             await notion_page.keyboard.type(message4, delay=20)
             await notion_page.keyboard.type(' ')
             await notion_page.keyboard.type(message5, delay=20)
+
+            await notion_page.keyboard.press('Enter')
 
 
             result = await self.click_button_based_on_selector(notion_page, "Close", False) 
