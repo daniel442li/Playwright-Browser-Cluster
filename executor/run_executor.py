@@ -9,9 +9,10 @@ from executor.schemas import *
 
 class ExecutorWebsocket:
     def __init__(self, websocket: WebSocket, id: str):
-        print(sessions)
+        print(id)
         self.websocket = websocket
         self.browser = sessions[str(id)]
+        self.id = id
         self._current_tf_id = 0
     
     def _get_modify_dom_and_update_current_tf_id_js_code(self):
@@ -40,6 +41,7 @@ class ExecutorWebsocket:
         action_handlers = {
             'new_page': self.new_page,
             'run_script': self.run_script,
+            'pause_script': self.pause_script,
         }
         if action in action_handlers:
             returned_value = await action_handlers[action](data)
@@ -254,7 +256,7 @@ class ExecutorWebsocket:
         except:
             await page.close()
     
-
+    
     async def click_link_based_on_selector(self, page, filter, exact=False):
         await self.load_accessibility_tree(page)
         tree = await self.get_accessibility_tree(page)
@@ -301,7 +303,12 @@ class ExecutorWebsocket:
         await self.edit_text(page, information)
         text_to_speech_instant(information)
 
-                    
+    async def pause_script(self, data):
+        await self.browser.context.close()
+        print("Browser closed.")
+        sessions.pop(str(data.get("id")))
+
+
     async def run_script(self, data):
         new_page_data_notion = {
             "action": "new_page",
@@ -408,27 +415,27 @@ class ExecutorWebsocket:
             message5 = "Let's chat."
             message6 = "- Sent by a Sales Workman"
 
-            await direct_profile_page.keyboard.type(message, delay=20)
+            await direct_profile_page.keyboard.type(message, delay=10)
 
             await direct_profile_page.keyboard.press('Enter')
 
-            await direct_profile_page.keyboard.type(message2, delay=20)
+            await direct_profile_page.keyboard.type(message2, delay=10)
 
             await direct_profile_page.keyboard.press('Enter')
 
-            await direct_profile_page.keyboard.type(message3, delay=20)
+            await direct_profile_page.keyboard.type(message3, delay=10)
 
             await direct_profile_page.keyboard.press('Enter')
 
-            await direct_profile_page.keyboard.type(message4, delay=20)
+            await direct_profile_page.keyboard.type(message4, delay=10)
 
             await direct_profile_page.keyboard.press('Enter')
 
-            await direct_profile_page.keyboard.type(message5, delay=20)
+            await direct_profile_page.keyboard.type(message5, delay=10)
 
             await direct_profile_page.keyboard.press('Enter')
 
-            await direct_profile_page.keyboard.type(message6, delay=20)
+            await direct_profile_page.keyboard.type(message6, delay=10)
 
 
             await self.click_button_based_on_selector(direct_profile_page, "Send now", False)
@@ -444,13 +451,13 @@ class ExecutorWebsocket:
             
 
 
-            await notion_page.keyboard.type(name, delay=20)
+            await notion_page.keyboard.type(name, delay=10)
             time.sleep(1)
             
             await notion_page.keyboard.press('Tab')
             time.sleep(1)
 
-            await notion_page.keyboard.type(current_url, delay=20)
+            await notion_page.keyboard.type(current_url, delay=10)
             time.sleep(1)
 
             await notion_page.keyboard.press('Tab')
@@ -459,34 +466,34 @@ class ExecutorWebsocket:
             print(location)
             location = location.replace("\n", "")
             location = location.strip()
-            await notion_page.keyboard.type(location, delay=20)
+            await notion_page.keyboard.type(location, delay=10)
             
 
             await notion_page.keyboard.press('Tab')
             time.sleep(1)
 
-            await notion_page.keyboard.type(industry, delay=20)
+            await notion_page.keyboard.type(industry, delay=10)
             time.sleep(1)
 
             await notion_page.keyboard.press('Tab')
 
             time.sleep(1)
-            await notion_page.keyboard.type(position, delay=20)
+            await notion_page.keyboard.type(position, delay=10)
 
             time.sleep(1)
             await notion_page.keyboard.press('Tab')
 
             time.sleep(1)
 
-            await notion_page.keyboard.type(message, delay=20)
+            await notion_page.keyboard.type(message, delay=10)
             await notion_page.keyboard.type(' ')
-            await notion_page.keyboard.type(message2, delay=20)
+            await notion_page.keyboard.type(message2, delay=10)
             await notion_page.keyboard.type(' ')
-            await notion_page.keyboard.type(message3, delay=20)
+            await notion_page.keyboard.type(message3, delay=10)
             await notion_page.keyboard.type(' ')
-            await notion_page.keyboard.type(message4, delay=20)
+            await notion_page.keyboard.type(message4, delay=10)
             await notion_page.keyboard.type(' ')
-            await notion_page.keyboard.type(message5, delay=20)
+            await notion_page.keyboard.type(message5, delay=10)
 
             await notion_page.keyboard.press('Enter')
 
