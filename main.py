@@ -14,6 +14,7 @@ import sentry_sdk
 from websocket import websocket_endpoint
 from shared import sessions
 from executor.run_executor import ExecutorWebsocket
+from extractor import router as extractor_router
 
 # Import configurations from config.py
 from config import (
@@ -404,6 +405,9 @@ async def websocket_endpoint(executor: ExecutorWebsocket = Depends(get_websocket
     await executor.connect()
     await executor.receive_and_send()
 
+
+
+app.include_router(extractor_router)
 
 @app.get("/")
 def read_root():
