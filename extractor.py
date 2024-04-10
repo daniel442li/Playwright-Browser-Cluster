@@ -11,7 +11,7 @@ from openai import OpenAI
 from config import OPENAI_API_KEY
 
 client = OpenAI(api_key=OPENAI_API_KEY)
-model = "gpt-3.5-turbo"
+model = "gpt-4-turbo-2024-04-09"
 router = APIRouter()
 
 class ExtractData(BaseModel):
@@ -25,7 +25,13 @@ async def extract_information(main_schema_reasoning, query, context):
         messages=[
             {
                 "role": "system",
-                "content": "You are extracting data from a form of text based on a user query. Return None otherwise. Please provide a confidence score based on how likely you think the answer is correct based on the context.",
+                "content": """
+                    You are extracting data from a form of text based on a user query. 
+                    Return None otherwise. 
+                    Please provide a confidence score based on how likely you think the answer is correct based on the context. 
+                    If there are multiple answers, please seperate by commas",
+                    You may be passed tables as HTML. Numbers tend to be to the right of the text.
+                    """
             },
             {
                 "role": "user",
@@ -78,14 +84,18 @@ async def extract_data(extract_data: ExtractData = Body(...)):
                     "confidence_score": {
                         "type": "string",
                         "description": "A score from 0-100 about how confident you are in your answer.",
-                    }
+                    },
+                    # "reasoning": {
+                    #     "type": "string",
+                    #     "description": "reasoning behind the text"
+                    # }
                 },
                 "required": [field['name'], "confidence_score"],
         }
 
         extract_data = await extract_information(main_schema_reasoning, field['name'], chunk_contents)
 
-        #print(extract_data[field['name']])
+        print(extract_data)
 
         
         data[field['name']] = extract_data[field['name']]

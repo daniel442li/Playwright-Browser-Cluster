@@ -11,6 +11,8 @@ class ExecutorWebsocket:
     def __init__(self, websocket: WebSocket, id: str):
         print(id)
         self.websocket = websocket
+
+            
         self.browser = sessions[str(id)]
         self.id = id
         self._current_tf_id = 0
