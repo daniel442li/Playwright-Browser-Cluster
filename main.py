@@ -11,7 +11,7 @@ import json
 import os
 import sys
 import sentry_sdk
-from websocket import websocket_endpoint
+from websocket import interactive_websocket_endpoint
 from shared import sessions
 from executor.run_executor import ExecutorWebsocket
 from extractor import router as extractor_router
@@ -393,7 +393,10 @@ async def get_accessibility_tree(session_id: str, query: AccessibilityTreeQuery)
         return {"status": "Error", "message": "Invalid or missing session_id."}
 
 
-# @app.websocket("/socket")(websocket_endpoint)
+@app.websocket("/socket")
+async def websocket_endpoint(websocket: WebSocket):
+    await interactive_websocket_endpoint(websocket)
+
 
 # Adjust the dependency function to accept an ID
 async def get_websocket_executor(websocket: WebSocket, id: str = Query(...)):
@@ -407,7 +410,7 @@ async def websocket_endpoint(executor: ExecutorWebsocket = Depends(get_websocket
 
 
 
-app.include_router(extractor_router)
+# app.include_router(extractor_router)
 
 @app.get("/")
 def read_root():

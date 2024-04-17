@@ -386,6 +386,7 @@ class BrowserAutomation:
 
     async def start_stream(self):
         self.update_activity_time()
+        googlePage = self.page
         await self.page.goto("https://google.com/")
         if self.recorder_page is not None:
             await self.recorder_page.close()
@@ -393,6 +394,9 @@ class BrowserAutomation:
         
         self.recorder_page = await self.context.new_page()
         await self.recorder_page.goto(HTML_PATH + "=" + self.session_id)
+        await self.page.bring_to_front()
+
+        
 
     async def start(self):
         future = asyncio.Future()
@@ -405,7 +409,7 @@ class BrowserAutomation:
         self.context = await self.playwright.chromium.launch_persistent_context(
             user_data_dir="./user_data",
             headless=False,
-            args=[f'--auto-select-desktop-capture-source={self.session_id} - Chromium',
+            args=[f'--auto-select-desktop-capture-source={self.session_id}',
                   f'--disable-extensions-except={extension_path}',
                   f'--load-extension={extension_path}',
                   '--enable-blink-features=AccessibilityObjectModel',

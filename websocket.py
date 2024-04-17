@@ -2,7 +2,7 @@ from fastapi import WebSocket
 import json
 from shared import sessions
 
-async def websocket_endpoint(websocket: WebSocket):
+async def interactive_websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
