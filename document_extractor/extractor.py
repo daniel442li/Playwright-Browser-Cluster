@@ -10,6 +10,9 @@ from openai import OpenAI
 
 from config import OPENAI_API_KEY
 
+from google.cloud import documentai
+from google.oauth2 import service_account
+
 client = OpenAI(api_key=OPENAI_API_KEY)
 model = "gpt-4-turbo-2024-04-09"
 router = APIRouter()
@@ -105,16 +108,9 @@ async def extract_data(extract_data: ExtractData = Body(...)):
     return data
 
 
-
-
-from google.cloud import documentai
-from google.oauth2 import service_account
-
-
-
-
 @router.post("/extract")
-def quickstart():
+async def quickstart(file: UploadFile = File(...)):
+    pdf_content = await file.read()
     # You must set the `api_endpoint`if you use a location other than "us".
     project_id = '132072817638'
     location = 'us'  # e.g., 'us' or 'europe'
@@ -130,14 +126,9 @@ def quickstart():
     # The full resource name
     name = f"projects/{project_id}/locations/{location}/processors/{processor_id}"
 
-
-    # Read the file into memory
-    with open(file_path, "rb") as image:
-        image_content = image.read()
-
     # Load binary data
     raw_document = documentai.RawDocument(
-        content=image_content,
+        content=pdf_content,
         mime_type="application/pdf",  # Refer to https://cloud.google.com/document-ai/docs/file-types for supported file types
     )
 
