@@ -1,10 +1,10 @@
 import asyncio
 from playwright.async_api import async_playwright
 import json
-from multi_choice import get_multi_inputs
+from ai_selection.multi_choice import get_multi_inputs
 import string
-from selection import answer_multiple_choice
-from selection import answer_multiple_choice_forms
+from ai_selection.selection import answer_multiple_choice
+from ai_selection.selection import answer_multiple_choice_forms
 import re
 from playwright_stealth import stealth_async
 from datetime import datetime, timedelta

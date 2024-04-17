@@ -11,7 +11,7 @@ import json
 import os
 import sys
 import sentry_sdk
-from websocket import interactive_websocket_endpoint
+from interactive_browser.websocket import interactive_websocket_endpoint
 from shared import sessions
 from executor.run_executor import ExecutorWebsocket
 from document_extractor.extractor import router as extractor_router
