@@ -89,7 +89,11 @@ async def initialize_browser_session(session_id):
 async def create_session(create_session_request: CreateSessionRequest):
     session_id = create_session_request.session_id
 
+    print(session_id)
+
     if session_id in sessions:
+
+        print("Session already exists")
         browser = sessions[session_id]
         await browser.close()
     
