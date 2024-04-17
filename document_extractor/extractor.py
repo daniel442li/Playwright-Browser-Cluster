@@ -58,7 +58,6 @@ async def extract_information(main_schema_reasoning, query, context):
     return main_json
 
 
-@router.post("/extract")
 async def extract_data(extract_data: ExtractData = Body(...)):
     schema = json.loads(extract_data.data)
 
@@ -104,3 +103,71 @@ async def extract_data(extract_data: ExtractData = Body(...)):
 
 
     return data
+
+
+
+
+from google.cloud import documentai
+from google.oauth2 import service_account
+
+
+
+
+@router.post("/extract")
+def quickstart():
+    # You must set the `api_endpoint`if you use a location other than "us".
+    project_id = '132072817638'
+    location = 'us'  # e.g., 'us' or 'europe'
+    processor_id = '29e9797914423bf0'
+    file_path = './document_extractor/mhc_invoice.pdf'
+
+    credentials = service_account.Credentials.from_service_account_file(
+        './document_extractor/workman-420419-c0db2b1250d8.json')
+
+    # Create a client
+    client = documentai.DocumentProcessorServiceClient(credentials=credentials)
+    
+    # The full resource name
+    name = f"projects/{project_id}/locations/{location}/processors/{processor_id}"
+
+
+    # Read the file into memory
+    with open(file_path, "rb") as image:
+        image_content = image.read()
+
+    # Load binary data
+    raw_document = documentai.RawDocument(
+        content=image_content,
+        mime_type="application/pdf",  # Refer to https://cloud.google.com/document-ai/docs/file-types for supported file types
+    )
+
+    # Configure the process request
+    # `processor.name` is the full resource name of the processor, e.g.:
+    # `projects/{project_id}/locations/{location}/processors/{processor_id}`
+    request = documentai.ProcessRequest(name=name, raw_document=raw_document)
+
+    result = client.process_document(request=request)
+
+    # For a full list of `Document` object attributes, reference this page:
+    # https://cloud.google.com/document-ai/docs/reference/rest/v1/Document
+    document = result.document
+
+    # Read the text recognition output from the processor
+    line_item = 0
+    entity_dict = {}
+    for entity in document.entities:
+        print(f"Entity type: {entity.type_}, Confidence: {entity.confidence} Text: {entity.mention_text}")
+        entity_dict[entity.type_] = entity.mention_text
+        if "line_item" in entity.type_: 
+            entity_dict[(entity.type_  + "_" + str(line_item))] = entity.mention_text
+            line_item += 1
+        else:
+            entity_dict[entity.type_] = entity.mention_text
+
+    return entity_dict
+        
+
+
+   
+
+
