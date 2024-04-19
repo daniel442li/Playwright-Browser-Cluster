@@ -395,7 +395,7 @@ class BrowserAutomation:
         self.recorder_page = await self.context.new_page()
         await self.recorder_page.goto(HTML_PATH + "=" + self.session_id)
         #await self.recorder_page.reload()
-        await self.page.bring_to_front()
+        #await self.page.bring_to_front()
 
         
 
@@ -410,7 +410,8 @@ class BrowserAutomation:
         self.context = await self.playwright.chromium.launch_persistent_context(
             user_data_dir=f"./user_data_{self.session_id}",
             headless=False,
-            args=[f'--auto-select-desktop-capture-source={self.session_id}',
+            args=[#f'--auto-select-desktop-capture-source={self.session_id}',
+                  f'--auto-select-tab-capture-source-by-title=Google',
                   f'--disable-extensions-except={extension_path}',
                   f'--load-extension={extension_path}',
                   '--enable-blink-features=AccessibilityObjectModel',

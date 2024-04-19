@@ -8,3 +8,4 @@ venv/
 *.pdf
 user_data/
 *.json
+user_data*

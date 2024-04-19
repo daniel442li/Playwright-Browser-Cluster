@@ -314,12 +314,12 @@ class ExecutorWebsocket:
     async def run_script(self, data):
         new_page_data_notion = {
             "action": "new_page",
-            "link": "https://www.notion.so/9f7c1f0e5d0641bdb8e53ba28c064b5b?v=f386299c773e417bb424d585bb13af82"
+            "link": "https://www.notion.so/001cee55dcf84e2b94ff0970e8e98669?v=4e0c0a5351ad4dacaa16c175779eb6b7"
         }
 
         new_page_data = {
             "action": "new_page",
-            "link": "https://www.linkedin.com/sales/search/people?query=(recentSearchParam%3A(id%3A3281715642%2CdoLogHistory%3Atrue)%2Cfilters%3AList((type%3ACOMPANY_HEADCOUNT%2Cvalues%3AList((id%3AB%2Ctext%3A1-10%2CselectionType%3AINCLUDED)))%2C(type%3ALEAD_INTERACTIONS%2Cvalues%3AList((id%3ALIVP%2Ctext%3AViewed%2520profile%2CselectionType%3AEXCLUDED)))%2C(type%3AFUNCTION%2Cvalues%3AList((id%3A25%2Ctext%3ASales%2CselectionType%3AINCLUDED)))%2C(type%3ASENIORITY_LEVEL%2Cvalues%3AList((id%3A310%2Ctext%3ACXO%2CselectionType%3AINCLUDED)))))&sessionId=GXzxjd0QQESuJBnLds3i9A%3D%3D"
+            "link": "https://www.linkedin.com/sales/search/people?query=(spellCorrectionEnabled%3Atrue%2CrecentSearchParam%3A(id%3A3338726818%2CdoLogHistory%3Atrue)%2Cfilters%3AList((type%3AFUNCTION%2Cvalues%3AList((id%3A11%2Ctext%3AHealthcare%2520Services%2CselectionType%3AINCLUDED)))%2C(type%3AREGION%2Cvalues%3AList((id%3A103644278%2Ctext%3AUnited%2520States%2CselectionType%3AINCLUDED)))%2C(type%3APROFILE_LANGUAGE%2Cvalues%3AList((id%3Aen%2Ctext%3AEnglish%2CselectionType%3AINCLUDED)))%2C(type%3ACOMPANY_HEADCOUNT%2Cvalues%3AList((id%3AB%2Ctext%3A1-10%2CselectionType%3AINCLUDED)%2C(id%3AC%2Ctext%3A11-50%2CselectionType%3AINCLUDED)))%2C(type%3APOSTED_ON_LINKEDIN%2Cvalues%3AList((id%3ARPOL%2Ctext%3APosted%2520on%2520LinkedIn%2CselectionType%3AINCLUDED)))%2C(type%3ALEAD_INTERACTIONS%2Cvalues%3AList((id%3ALIVP%2Ctext%3AViewed%2520profile%2CselectionType%3AEXCLUDED))))%2Ckeywords%3ADentist%2520Private%2520Practice)&sessionId=N3vEp2lFReuxJ6WPtAwzJg%3D%3D"
         }
 
 
@@ -336,175 +336,173 @@ class ExecutorWebsocket:
         
         time.sleep(3)
 
-        await self.load_all_content(linkedin_page)
-        
-        await self.load_accessibility_tree(linkedin_page)
-        tree = await self.get_accessibility_tree(linkedin_page)
+        for _ in range(3):
 
-        links = process_elements_links_manual(tree)
-        relevant_links = await self.filter_elements(links, "Go to")
+            await self.load_all_content(linkedin_page)
+            
+            await self.load_accessibility_tree(linkedin_page)
+            tree = await self.get_accessibility_tree(linkedin_page)
 
-        
+            links = process_elements_links_manual(tree)
+            relevant_links = await self.filter_elements(links, "Go to")
 
-        accounts = await self.sort_by_y_remove_dupes(linkedin_page, relevant_links)
+            
 
-        for account in accounts:
-            profile_page = await self.open_new_page_and_focus(linkedin_page, account)
+            accounts = await self.sort_by_y_remove_dupes(linkedin_page, relevant_links)
 
-            result = await self.click_button_based_on_selector(profile_page, "Open actions")
+            for account in accounts:
+                profile_page = await self.open_new_page_and_focus(linkedin_page, account)
 
-            if not result:
+                result = await self.click_button_based_on_selector(profile_page, "Open actions")
+
+                if not result:
+                    await profile_page.close()
+                    continue
+                
+                time.sleep(1)
+
+                direct_profile_page = await self.click_link_based_on_selector(profile_page, "View LinkedIn profile")
+
                 await profile_page.close()
-                continue
-            
-            time.sleep(1)
-
-            direct_profile_page = await self.click_link_based_on_selector(profile_page, "View LinkedIn profile")
-
-            await profile_page.close()
 
 
-            time.sleep(2)
-            
-            current_url = direct_profile_page.url
-            
-            name = await self.scrape_information(direct_profile_page, "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words")
+                time.sleep(2)
+                
+                current_url = direct_profile_page.url
+                
+                name = await self.scrape_information(direct_profile_page, "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words")
 
-            title = await self.scrape_information(direct_profile_page, ".text-body-medium.break-words")
+                title = await self.scrape_information(direct_profile_page, ".text-body-medium.break-words")
 
-            location = await self.scrape_information(direct_profile_page, ".text-body-small.inline.t-black--light.break-words")
+                location = await self.scrape_information(direct_profile_page, ".text-body-small.inline.t-black--light.break-words")
 
-            description = await self.scrape_information(direct_profile_page, "div.display-flex.ph5.pv3")
+                description = await self.scrape_information(direct_profile_page, "div.display-flex.ph5.pv3")
 
 
-            result = await self.click_button_based_on_selector(direct_profile_page, "More actions")
+                result = await self.click_button_based_on_selector(direct_profile_page, "More actions")
 
-            if not result:
+                if not result:
+                    await direct_profile_page.close()
+                    continue
+
+                result = await self.click_button_based_on_selector(direct_profile_page, "to connect")
+
+                if not result:
+                    await direct_profile_page.close()
+                    continue
+
+                result = await self.click_button_based_on_selector(direct_profile_page, "Add a note")
+
+                if not result:
+                    await direct_profile_page.close()
+                    continue
+                
+                await self.speak_information(direct_profile_page, "I will now send a personalized message.")
+
+                information = title + description
+                user_info = user_information(information, main_schema)
+                
+                first_name = name_information(name)
+
+                first_name = first_name["first_name"]
+
+                industry = user_info["industry"].lower()
+                position = user_info["position"]
+
+                #software = software_answer(industry)
+                #soft = software["software"]
+
+                message = f"Hi {first_name},"
+                message2 = f"We automate the RCM process with AI end-to-end."
+                message3 = f"We can verify insurance, submit claims and appeals, and automate Explanation of Benefits reconciliation."  
+                message4 = "We're looking for limited pilot partners."
+                message5 = "Let's chat."
+
+                await direct_profile_page.keyboard.type(message, delay=10)
+
+                await direct_profile_page.keyboard.press('Enter')
+
+                await direct_profile_page.keyboard.type(message2, delay=10)
+
+                await direct_profile_page.keyboard.press('Enter')
+
+                await direct_profile_page.keyboard.type(message3, delay=10)
+
+                await direct_profile_page.keyboard.press('Enter')
+
+                await direct_profile_page.keyboard.type(message4, delay=10)
+
+                await direct_profile_page.keyboard.press('Enter')
+
+                await direct_profile_page.keyboard.type(message5, delay=10)
+
+                await self.click_button_based_on_selector(direct_profile_page, "Send now", False)
+
+                time.sleep(2)
+
+                await notion_page.bring_to_front()
                 await direct_profile_page.close()
-                continue
-
-            result = await self.click_button_based_on_selector(direct_profile_page, "to connect")
-
-            if not result:
-                await direct_profile_page.close()
-                continue
-
-            result = await self.click_button_based_on_selector(direct_profile_page, "Add a note")
-
-            if not result:
-                await direct_profile_page.close()
-                continue
-            
-            await self.speak_information(direct_profile_page, "I will now send a personalized message.")
-
-            information = title + description
-            user_info = user_information(information, main_schema)
-            
-            first_name = name_information(name)
-
-            first_name = first_name["first_name"]
-
-            industry = user_info["industry"].lower()
-            position = user_info["position"]
-
-            software = software_answer(industry)
-            soft = software["software"]
-
-            message = f"Hi {first_name},"
-            message2 = f"We build AI digital workers."
-            message3 = f"These workers are experts in {industry} and can operate software such as {soft}."  
-            message4 = "We're looking for limited pilot partners."
-            message5 = "Let's chat."
-            message6 = "- Sent by a Sales Workman"
-
-            await direct_profile_page.keyboard.type(message, delay=10)
-
-            await direct_profile_page.keyboard.press('Enter')
-
-            await direct_profile_page.keyboard.type(message2, delay=10)
-
-            await direct_profile_page.keyboard.press('Enter')
-
-            await direct_profile_page.keyboard.type(message3, delay=10)
-
-            await direct_profile_page.keyboard.press('Enter')
-
-            await direct_profile_page.keyboard.type(message4, delay=10)
-
-            await direct_profile_page.keyboard.press('Enter')
-
-            await direct_profile_page.keyboard.type(message5, delay=10)
-
-            await direct_profile_page.keyboard.press('Enter')
-
-            await direct_profile_page.keyboard.type(message6, delay=10)
 
 
-            await self.click_button_based_on_selector(direct_profile_page, "Send now", False)
+                result = await self.click_button_based_on_selector(notion_page, "New", True) 
 
-            time.sleep(2)
-
-            await notion_page.bring_to_front()
-            await direct_profile_page.close()
+                
 
 
-            result = await self.click_button_based_on_selector(notion_page, "New", True) 
+                await notion_page.keyboard.type(name, delay=10)
+                time.sleep(1)
+                
+                await notion_page.keyboard.press('Tab')
+                time.sleep(1)
 
-            
+                await notion_page.keyboard.type(current_url, delay=10)
+                time.sleep(1)
 
+                await notion_page.keyboard.press('Tab')
+                time.sleep(1)
 
-            await notion_page.keyboard.type(name, delay=10)
-            time.sleep(1)
-            
-            await notion_page.keyboard.press('Tab')
-            time.sleep(1)
+                print(location)
+                location = location.replace("\n", "")
+                location = location.strip()
+                await notion_page.keyboard.type(location, delay=10)
+                
 
-            await notion_page.keyboard.type(current_url, delay=10)
-            time.sleep(1)
+                await notion_page.keyboard.press('Tab')
+                time.sleep(1)
 
-            await notion_page.keyboard.press('Tab')
-            time.sleep(1)
+                await notion_page.keyboard.type(industry, delay=10)
+                time.sleep(1)
 
-            print(location)
-            location = location.replace("\n", "")
-            location = location.strip()
-            await notion_page.keyboard.type(location, delay=10)
-            
+                await notion_page.keyboard.press('Tab')
 
-            await notion_page.keyboard.press('Tab')
-            time.sleep(1)
+                time.sleep(1)
+                await notion_page.keyboard.type(position, delay=10)
 
-            await notion_page.keyboard.type(industry, delay=10)
-            time.sleep(1)
+                time.sleep(1)
+                await notion_page.keyboard.press('Tab')
 
-            await notion_page.keyboard.press('Tab')
+                time.sleep(1)
 
-            time.sleep(1)
-            await notion_page.keyboard.type(position, delay=10)
+                await notion_page.keyboard.type(message, delay=10)
+                await notion_page.keyboard.type(' ')
+                await notion_page.keyboard.type(message2, delay=10)
+                await notion_page.keyboard.type(' ')
+                await notion_page.keyboard.type(message3, delay=10)
+                await notion_page.keyboard.type(' ')
+                await notion_page.keyboard.type(message4, delay=10)
+                await notion_page.keyboard.type(' ')
+                await notion_page.keyboard.type(message5, delay=10)
 
-            time.sleep(1)
-            await notion_page.keyboard.press('Tab')
-
-            time.sleep(1)
-
-            await notion_page.keyboard.type(message, delay=10)
-            await notion_page.keyboard.type(' ')
-            await notion_page.keyboard.type(message2, delay=10)
-            await notion_page.keyboard.type(' ')
-            await notion_page.keyboard.type(message3, delay=10)
-            await notion_page.keyboard.type(' ')
-            await notion_page.keyboard.type(message4, delay=10)
-            await notion_page.keyboard.type(' ')
-            await notion_page.keyboard.type(message5, delay=10)
-
-            await notion_page.keyboard.press('Enter')
+                await notion_page.keyboard.press('Enter')
 
 
-            result = await self.click_button_based_on_selector(notion_page, "Close", False) 
+                result = await self.click_button_based_on_selector(notion_page, "Close", False) 
 
-            await self.speak_information(notion_page, "I have added the information to the Notion page.")
+                await self.speak_information(notion_page, "I have added the information to the Notion page.")
 
-            await linkedin_page.bring_to_front()
+                await linkedin_page.bring_to_front()
+
+            result = await self.click_button_based_on_selector(linkedin_page, "Next")
             
 
             

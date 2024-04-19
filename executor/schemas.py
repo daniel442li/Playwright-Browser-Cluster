@@ -75,10 +75,6 @@ def software_answer(industry):
         temperature=0.1,
     )
     
-
-    # main_json = completion.choices[0].message.function_call.arguments
-    # main_json = json.loads(main_json)
-
     main_json = completion.choices[0].message.function_call.arguments
     main_json = json.loads(main_json)
 
