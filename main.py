@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi import WebSocket, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -15,6 +15,8 @@ from interactive_browser.websocket import interactive_websocket_endpoint
 from shared import sessions
 from executor.run_executor import ExecutorWebsocket
 from document_extractor.extractor import router as extractor_router
+from playwright.async_api import async_playwright
+from browserbase import start_browser_session
 
 # Import configurations from config.py
 from config import (
@@ -415,6 +417,26 @@ async def websocket_endpoint(executor: ExecutorWebsocket = Depends(get_websocket
 
 
 app.include_router(extractor_router)
+
+
+async def run_browser_session(session_id, debugger_url):
+    async with async_playwright() as playwright:
+        ws_url = f'wss://api.browserbase.com?apiKey=DvApQM40mJcPElE2ctsnQfAmrSc&sessionId={session_id}'
+        browser = await playwright.chromium.connect_over_cdp(ws_url)
+        context = browser.contexts[0]
+        page = context.pages[0]
+        await page.goto("https://google.com")
+        await asyncio.sleep(60)  # Using asyncio.sleep instead of time.sleep
+        await browser.close()
+
+@app.post("/start-session")
+async def run_session(background_tasks: BackgroundTasks):
+    session_id, debugger_url = await start_browser_session()
+    # Add browser session to run in the background
+    background_tasks.add_task(run_browser_session, session_id, debugger_url)
+    # Immediately return the debugger_url while browser automation runs in the background
+    return {"debugger_url": debugger_url}
+
 
 @app.get("/")
 def read_root():
