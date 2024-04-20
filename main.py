@@ -426,7 +426,7 @@ async def run_browser_session(session_id, debugger_url):
         context = browser.contexts[0]
         page = context.pages[0]
         await page.goto("https://google.com")
-        await asyncio.sleep(60)  # Using asyncio.sleep instead of time.sleep
+        await asyncio.sleep(120)  # Using asyncio.sleep instead of time.sleep
         await browser.close()
 
 @app.post("/start-session")
