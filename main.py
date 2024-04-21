@@ -419,23 +419,86 @@ async def websocket_endpoint(executor: ExecutorWebsocket = Depends(get_websocket
 app.include_router(extractor_router)
 
 
-async def run_browser_session(session_id, debugger_url):
+async def run_browser_session(session_id):
     async with async_playwright() as playwright:
         ws_url = f'wss://api.browserbase.com?apiKey=DvApQM40mJcPElE2ctsnQfAmrSc&sessionId={session_id}'
         browser = await playwright.chromium.connect_over_cdp(ws_url)
         context = browser.contexts[0]
         page = context.pages[0]
+
+        # for i in range(20):
+        #     await page.goto("https://google.com")
+        #     await asyncio.sleep(5)
+        #     await page.goto("https://youtube.com")
+        #     await asyncio.sleep(5)
         await page.goto("https://google.com")
-        await asyncio.sleep(120)  # Using asyncio.sleep instead of time.sleep
-        await browser.close()
+        print("sleeping")
+        await asyncio.sleep(1200)  # Using asyncio.sleep instead of time.sleep
+        #await browser.close()
 
 @app.post("/start-session")
 async def run_session(background_tasks: BackgroundTasks):
+    print("Starting session")
     session_id, debugger_url = await start_browser_session()
     # Add browser session to run in the background
-    background_tasks.add_task(run_browser_session, session_id, debugger_url)
+    background_tasks.add_task(run_browser_session, session_id)
     # Immediately return the debugger_url while browser automation runs in the background
-    return {"debugger_url": debugger_url}
+    return {"debugger_url": debugger_url, "session_id": session_id}
+
+
+@app.get("/run-session/{session_id}")
+async def print_session(session_id: str):
+    print(f"Session ID: {session_id}")
+    async with async_playwright() as playwright:
+        ws_url = f'wss://api.browserbase.com?apiKey=DvApQM40mJcPElE2ctsnQfAmrSc&sessionId={session_id}'
+        browser = await playwright.chromium.connect_over_cdp(ws_url)
+        context = browser.contexts[0]
+        page = context.pages[0]
+
+        await page.goto("https://workman864326.monday.com/boards/6495144115")
+        await page.wait_for_load_state("networkidle")
+
+        # Type an email with delay
+        await page.keyboard.type('daniel@workman.so', delay=10)
+
+        # Press the Tab key
+        await page.keyboard.press('Tab')
+
+        # Type a password with delay
+        await page.keyboard.type('fuE#S4Fce2!!n^', delay=10)
+
+        # Click on the log in button using aria-label for better accessibility
+        await page.click('button[aria-label="Log in"]')
+
+        # Wait for a timeout
+        await page.wait_for_timeout(1000)
+
+        # Perform a series of actions to interact with elements on the page
+        await page.click('#board-header-view-bar button.add-with-dropdown.button_1c432f8420.sizeSmall_fafc138ba4.kindPrimary_f26ee2d0a5.colorPrimary_5df49ae5ad')
+        await page.wait_for_timeout(1000)
+        await page.keyboard.type('Lebron James', delay=10)
+        await page.wait_for_timeout(1000)
+        await page.keyboard.press('Tab')
+        await page.wait_for_timeout(1000)
+        await page.keyboard.press('Tab')
+        await page.wait_for_timeout(1000)
+        await page.keyboard.press('Enter')
+        await page.wait_for_timeout(1000)
+        await page.keyboard.type('6784882822', delay=10)
+        await page.keyboard.press('Enter')
+        await page.wait_for_timeout(1000)
+        await page.keyboard.press('Tab')
+        await page.wait_for_timeout(1000)
+        await page.keyboard.press('Enter')
+        await page.wait_for_timeout(1000)
+        await page.keyboard.type('daniel442li@gmail.com', delay=10)
+        await page.wait_for_timeout(1000)
+        await page.keyboard.press('Enter')
+
+        print("went to page")
+
+    return {"message": f"Printed session ID: {session_id}"}
+
 
 
 @app.get("/")
