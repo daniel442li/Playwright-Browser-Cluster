@@ -113,13 +113,12 @@ from google.oauth2 import service_account
 
 
 
-@router.post("/extract")
-def quickstart():
+async def quickstart(file: UploadFile = File(...)):
+    pdf_content = await file.read()
     # You must set the `api_endpoint`if you use a location other than "us".
     project_id = '132072817638'
     location = 'us'  # e.g., 'us' or 'europe'
     processor_id = '29e9797914423bf0'
-    file_path = './document_extractor/mhc_invoice.pdf'
 
     credentials = service_account.Credentials.from_service_account_file(
         './document_extractor/workman-420419-c0db2b1250d8.json')
@@ -130,14 +129,9 @@ def quickstart():
     # The full resource name
     name = f"projects/{project_id}/locations/{location}/processors/{processor_id}"
 
-
-    # Read the file into memory
-    with open(file_path, "rb") as image:
-        image_content = image.read()
-
     # Load binary data
     raw_document = documentai.RawDocument(
-        content=image_content,
+        content=pdf_content,
         mime_type="application/pdf",  # Refer to https://cloud.google.com/document-ai/docs/file-types for supported file types
     )
 
@@ -165,9 +159,96 @@ def quickstart():
             entity_dict[entity.type_] = entity.mention_text
 
     return entity_dict
-        
 
 
-   
+import base64
+import vertexai
+from vertexai.generative_models import GenerativeModel, Part, FinishReason
+import vertexai.preview.generative_models as generative_models
+import re
+import json
 
 
+text1 = """You are a document entity extraction specialist. Given a document, your task is to extract the text value of the following entities:
+{
+\"vendor_name\": \"\",
+\"invoice_number\": \"\",
+\"terms\": \"\",
+\"date\": \"\",
+\"total_amount\": \"\",
+\"ship_to\": \"\",
+\"line_items\": [
+{
+\"amount\": \"\",
+\"description\": \"\",
+\"sku\": \"\",
+\"quantity\": \"\",
+\"unit\": \"\",
+\"unit_price\": \"\"
+}
+],
+}
+
+- The JSON schema must be followed during the extraction.
+- The values must only include text found in the document
+- Do not normalize any entity value.
+- If an entity is not found in the document, set the entity value to null."""
+
+generation_config = {
+    "max_output_tokens": 8192,
+    "top_p": 0.95,
+}
+
+safety_settings = {
+    generative_models.HarmCategory.HARM_CATEGORY_HATE_SPEECH: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+    generative_models.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+    generative_models.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+    generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+}
+
+@router.post("/extract")   
+async def vertex_extract(file: UploadFile = File(...)):
+    vertexai.init(project="spheric-bloom-418220", location="us-central1")
+    model = GenerativeModel("gemini-1.5-pro-preview-0409")
+    
+    pdf_content = await file.read()
+    # You must set the `api_endpoint`if you use a location other than "us".
+
+    # Load binary data
+    document1 = Part.from_data(
+    mime_type="application/pdf",
+    data=pdf_content)
+
+
+    responses = model.generate_content(
+        [document1, text1],
+        generation_config=generation_config,
+        safety_settings=safety_settings,
+    )
+
+    result = (responses.candidates[0].content.parts[0].text)
+
+    print(result)
+
+    # Parse the result using the provided regex
+    parsed_result = re.findall(r'```json\s*\n([\s\S]*?)\n```', result, re.MULTILINE)
+        # Print the parsed result
+    parsed_result = (parsed_result[0])
+
+    data = (json.loads(parsed_result))
+
+    # Remove the 'line_items' from the dictionary
+    line_items = data.pop('line_items')
+
+    # Append each line item back to the root dictionary with a suffix
+    for index, item in enumerate(line_items, start=1):
+        for key, value in item.items():
+            # Creating a new key with suffix _<index>
+            new_key = f"{key}_{index}"
+            data[new_key] = value
+
+    # Convert the modified dictionary back to JSON string if needed
+    modified_json = json.dumps(data, indent=4)
+    print(modified_json)
+
+    return data
