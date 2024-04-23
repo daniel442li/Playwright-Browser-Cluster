@@ -192,7 +192,7 @@ text1 = """You are a document entity extraction specialist. Given a document, yo
 - The JSON schema must be followed during the extraction.
 - The values must only include text found in the document
 - Do not normalize any entity value.
-- If an entity is not found in the document, set the entity value to null."""
+- If an entity is not found in the document, set the entity value to "null"."""
 
 generation_config = {
     "max_output_tokens": 8192,
@@ -205,6 +205,11 @@ safety_settings = {
     generative_models.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
     generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
 }
+
+def clean_json_string(json_string):
+    # Regular expression to find commas before a closing bracket or brace
+    json_string = re.sub(r',\s*([}\]])', r'\1', json_string)
+    return json_string
 
 @router.post("/extract")   
 async def vertex_extract(file: UploadFile = File(...)):
@@ -234,6 +239,8 @@ async def vertex_extract(file: UploadFile = File(...)):
     parsed_result = re.findall(r'```json\s*\n([\s\S]*?)\n```', result, re.MULTILINE)
         # Print the parsed result
     parsed_result = (parsed_result[0])
+
+    parsed_result = clean_json_string(parsed_result)
 
     data = (json.loads(parsed_result))
 
