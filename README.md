@@ -1,4 +1,4 @@
-Playwright API for Automated Browser Interaction.
+Playwright API for Automated Browser Interaction. Includes the ability to deploy a browser cluster on Kubernetes but highly recommend https://www.browserbase.com/
 
 1. Download Python
 
