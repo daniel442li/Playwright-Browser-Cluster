@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
+
 class CreateSessionRequest(BaseModel):
     session_id: str
 
@@ -12,15 +13,18 @@ class CreateSessionResponse(BaseModel):
 class CommandRequestNavigate(BaseModel):
     session_id: str
     link: str
-    cookie: Optional[list] = None 
+    cookie: Optional[list] = None
+
 
 class CommandRequestSearch(BaseModel):
     session_id: str
     query: str
 
+
 class CommandRequestClick(BaseModel):
     session_id: str
     query: str
+
 
 class CommandRequestPress(BaseModel):
     session_id: str
@@ -32,8 +36,10 @@ class CommandResponse(BaseModel):
     action: str
     parameters: list
 
+
 class FillForms(BaseModel):
     session_id: str
+
 
 class CacheRequest(BaseModel):
     session_id: str
@@ -58,6 +64,7 @@ class SessionExistsRequest(BaseModel):
 
 class SessionExistsResponse(BaseModel):
     exists: bool
+
 
 class SessionReadyResponse(BaseModel):
     ready: bool

@@ -5,7 +5,7 @@ from config import OPENAI_API_KEY
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 model = "gpt-4-1106-preview"
-image_model = ''
+image_model = ""
 
 main_schema = {
     "type": "object",
@@ -29,11 +29,10 @@ main_schema_reasoning = {
         "reasoning": {
             "type": "string",
             "description": "The reasoning behind your answer",
-        }
+        },
     },
     "required": ["answer", "reasoning"],
 }
-
 
 
 answer_all = {
@@ -57,7 +56,7 @@ answer_all = {
                         "type": "string",
                         "description": "The type of element. The three types are input (text, email, etc), file (file upload), and select (dropdown).",
                         "enum": ["input", "file", "select"],
-                    }
+                    },
                 },
                 "required": ["answer", "label", "type"],
             },
@@ -85,7 +84,8 @@ async def answer_multiple_choice(problem, quiz):
                     "After it hits the right border it goes from top to bottom. "
                     "Identify the correct element based on its attributes and purpose, regardless of syntax correctness. "
                     "Choose the correct answer for "
-                ) + "\n"
+                )
+                + "\n"
                 + str(problem)
                 + "\n"
                 + "###"
@@ -93,13 +93,10 @@ async def answer_multiple_choice(problem, quiz):
                 + str(quiz),
             },
         ],
-        functions=[
-            {"name": "answer_multiple_choice", "parameters": main_schema}
-        ],
+        functions=[{"name": "answer_multiple_choice", "parameters": main_schema}],
         function_call={"name": "answer_multiple_choice"},
         temperature=0,
     )
-    
 
     main_json = completion.choices[0].message.function_call.arguments
     main_json = json.loads(main_json)
@@ -128,11 +125,12 @@ async def answer_multiple_choice_forms(quiz):
                     "After it hits the right border it goes from top to bottom. "
                     "You will only select elements that are form elements. These include inputs, textareas, comboboxes, etc."
                     "Do not select submit buttons or other non-form elements."
-                    #"You will only fill out the form elements which are required. This is indicated by the asterisk (*) symbol. If a form element is required, you must fill it out. If it is not required, you can skip it."
+                    # "You will only fill out the form elements which are required. This is indicated by the asterisk (*) symbol. If a form element is required, you must fill it out. If it is not required, you can skip it."
                     "Please also specify the type of element. The three types are input (text, email, etc), file (file upload), and select (dropdown)."
                     "You should seperate each answer choice into a seperate array element. The final answer should look something like this: ['A', 'F', 'K'], etc."
                     "After picking your answer, pick a label based on the parent node / the text around the element. Should be like 'Company Name', 'Last Name', etc. Look at the text in the multiple choice they are ordered. Do not just call it Input Text. Find the right element based on the DOM."
-                ) + "\n"
+                )
+                + "\n"
                 + "###"
                 + "Multiple Choice QA: \n"
                 + str(quiz),

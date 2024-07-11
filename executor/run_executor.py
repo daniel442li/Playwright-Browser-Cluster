@@ -1,27 +1,30 @@
 from fastapi import WebSocket
 from shared import sessions
 import json
-import time 
+import time
 from executor.tts import text_to_speech_instant
 from executor.label import workman_id_generator
-from executor.element_find import process_elements_links_manual, process_elements_button_manual
+from executor.element_find import (
+    process_elements_links_manual,
+    process_elements_button_manual,
+)
 from executor.schemas import *
+
 
 class ExecutorWebsocket:
     def __init__(self, websocket: WebSocket, id: str):
         print(id)
         self.websocket = websocket
 
-            
         self.browser = sessions[str(id)]
         self.id = id
         self._current_tf_id = 0
-    
+
     def _get_modify_dom_and_update_current_tf_id_js_code(self):
         """Returns the JavaScript code that is used to modify the DOM adn return the updated current_tf_id."""
         # Future scope: Move to a js file, read it and return it
         return workman_id_generator
-    
+
     async def get_accessibility_tree(self, page, interesting=True):
         snapshot = await page.accessibility.snapshot(interesting_only=True)
         return snapshot
@@ -34,16 +37,16 @@ class ExecutorWebsocket:
             data = await self.websocket.receive_text()
             await self.websocket.send_text(f"Message text was: {data}, from ws2")
             await self.handle_action(data)
-    
+
     async def handle_action(self, data):
         print(data)
         data = json.loads(data)
         action = data.get("action")
         print(action)
         action_handlers = {
-            'new_page': self.new_page,
-            'run_script': self.run_script,
-            'pause_script': self.pause_script,
+            "new_page": self.new_page,
+            "run_script": self.run_script,
+            "pause_script": self.pause_script,
         }
         if action in action_handlers:
             returned_value = await action_handlers[action](data)
@@ -58,7 +61,6 @@ class ExecutorWebsocket:
         await self.edit_text(page, "Opening new page.")
         text_to_speech_instant("Opening new page.")
         return page
-    
 
     async def edit_text(self, page, text):
         js_code_check_and_update = f"""
@@ -90,23 +92,26 @@ class ExecutorWebsocket:
         }}
         """
         await page.evaluate(js_code_check_and_update)
-    
+
     async def check_login(self, page, login_page_selector):
         while True:
             try:
-                await page.evaluate("""() => {
+                await page.evaluate(
+                    """() => {
                 return 'so the page loads dynamically!';
-                }""")
+                }"""
+                )
             except:
                 pass
 
             if login_page_selector in page.url:
-                await self.edit_text(page, "I am stuck on the login page. Please login.")
+                await self.edit_text(
+                    page, "I am stuck on the login page. Please login."
+                )
                 text_to_speech_instant("I am stuck on the login page. Please login.")
             else:
                 break
 
-            
             time.sleep(5)
             print(page.url)
 
@@ -115,52 +120,62 @@ class ExecutorWebsocket:
         text_to_speech_instant("I will now scan the whole site.")
 
         # Press Tab once to focus on the first focusable element
-        await page.keyboard.press('Tab')
+        await page.keyboard.press("Tab")
 
         # Get the rectangle of the first focused element
-        first_rect = await page.evaluate("""() => {
+        first_rect = await page.evaluate(
+            """() => {
             const element = document.activeElement;
             const rect = element.getBoundingClientRect();
             return {x: rect.left + window.scrollX, y: rect.top + window.scrollY};
-        }""")
+        }"""
+        )
 
         print("First element:", first_rect)
 
         await page.wait_for_timeout(5)
 
-        await page.keyboard.press('Tab')
+        await page.keyboard.press("Tab")
 
         # Get the rectangle of the first focused element
-        second_rect = await page.evaluate("""() => {
+        second_rect = await page.evaluate(
+            """() => {
             const element = document.activeElement;
             const rect = element.getBoundingClientRect();
             return {x: rect.left + window.scrollX, y: rect.top + window.scrollY};
-        }""")
-
-
+        }"""
+        )
 
         while True:
             # Press Tab to focus on the next element
-            await page.keyboard.press('Tab')
+            await page.keyboard.press("Tab")
             # Optionally, add a small delay between each press to simulate more natural behavior
             await page.wait_for_timeout(5)  # Wait for 50 milliseconds
 
             # Get the rectangle of the currently focused element
-            current_rect = await page.evaluate("""() => {
+            current_rect = await page.evaluate(
+                """() => {
                 const element = document.activeElement;
                 const rect = element.getBoundingClientRect();
                 return {x: rect.left + window.scrollX, y: rect.top + window.scrollY};
-            }""")
+            }"""
+            )
 
-            if current_rect['x'] < 50 and current_rect['y'] < 50:
+            if current_rect["x"] < 50 and current_rect["y"] < 50:
                 print("Current element with x and y less than 50:", current_rect)
 
             # Check if the current element's rect matches the first element's rect
-            if (abs(current_rect['x'] - first_rect['x']) <= 2 and abs(current_rect['y'] - first_rect['y']) <= 2) or (abs(current_rect['x'] - second_rect['x']) <= 2 and abs(current_rect['y'] - second_rect['y']) <= 2):
+            if (
+                abs(current_rect["x"] - first_rect["x"]) <= 2
+                and abs(current_rect["y"] - first_rect["y"]) <= 2
+            ) or (
+                abs(current_rect["x"] - second_rect["x"]) <= 2
+                and abs(current_rect["y"] - second_rect["y"]) <= 2
+            ):
                 await self.edit_text(page, "Scanning complete.")
                 text_to_speech_instant("Scanning complete.")
                 break
-    
+
     async def load_accessibility_tree(self, page):
         self._current_tf_id = await page.evaluate(
             self._get_modify_dom_and_update_current_tf_id_js_code(),
@@ -174,15 +189,17 @@ class ExecutorWebsocket:
             name = link["name"]
             found_element = page.locator(f'[workman_id="{workman_id}"]')
             element_coordinates = await found_element.bounding_box()
-            accounts.append({
-                "name": name,
-                "workman_id": workman_id,
-                "x": element_coordinates['x'],
-                "y": element_coordinates['y']
-            })
+            accounts.append(
+                {
+                    "name": name,
+                    "workman_id": workman_id,
+                    "x": element_coordinates["x"],
+                    "y": element_coordinates["y"],
+                }
+            )
 
         # Sort accounts by the Y coordinate
-        accounts.sort(key=lambda account: account['y'])
+        accounts.sort(key=lambda account: account["y"])
 
         filtered_accounts = []
         threshold = 5  # Define a threshold for y-coordinate difference
@@ -190,7 +207,7 @@ class ExecutorWebsocket:
             if i == 0:
                 filtered_accounts.append(account)
             else:
-                if abs(account['y'] - filtered_accounts[-1]['y']) > threshold:
+                if abs(account["y"] - filtered_accounts[-1]["y"]) > threshold:
                     filtered_accounts.append(account)
         accounts = filtered_accounts
 
@@ -203,13 +220,13 @@ class ExecutorWebsocket:
         print("Account: " + element["workman_id"])
         await found_element.highlight()
         await found_element.scroll_into_view_if_needed()
-        
+
         await self.edit_text(page, f"Opening link in new tab: {element['name']}")
         text_to_speech_instant(f"Opening link in new tab: {element['name']}")
 
         async with page.context.expect_page() as new_page_info:
             try:
-                await found_element.click(button='middle')
+                await found_element.click(button="middle")
             except Exception as e:
                 print(f"Failed to click on the element: {e}")
                 return
@@ -236,9 +253,17 @@ class ExecutorWebsocket:
 
         try:
             if exact:
-                target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in buttons if element["name"] == filter)
+                target_id = next(
+                    json.loads(element["keyshortcuts"])["workman_id"]
+                    for element in buttons
+                    if element["name"] == filter
+                )
             else:
-                target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in buttons if filter in element["name"])
+                target_id = next(
+                    json.loads(element["keyshortcuts"])["workman_id"]
+                    for element in buttons
+                    if filter in element["name"]
+                )
             print(f"Target ID: {target_id}")
             target_element = page.locator(f'[workman_id="{target_id}"]')
         except StopIteration:
@@ -257,8 +282,7 @@ class ExecutorWebsocket:
             return "Success"
         except:
             await page.close()
-    
-    
+
     async def click_link_based_on_selector(self, page, filter, exact=False):
         await self.load_accessibility_tree(page)
         tree = await self.get_accessibility_tree(page)
@@ -267,9 +291,17 @@ class ExecutorWebsocket:
         text_to_speech_instant(f"Clicking on the {filter} button")
         try:
             if exact:
-                target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in links if element["name"] == filter)
+                target_id = next(
+                    json.loads(element["keyshortcuts"])["workman_id"]
+                    for element in links
+                    if element["name"] == filter
+                )
             else:
-                target_id = next(json.loads(element["keyshortcuts"])["workman_id"] for element in links if filter in element["name"])
+                target_id = next(
+                    json.loads(element["keyshortcuts"])["workman_id"]
+                    for element in links
+                    if filter in element["name"]
+                )
             print(f"Target ID: {target_id}")
             target_element = page.locator(f'[workman_id="{target_id}"]')
         except StopIteration:
@@ -284,7 +316,7 @@ class ExecutorWebsocket:
 
         try:
             time.sleep(1)
-            new_page_future = page.context.wait_for_event('page')
+            new_page_future = page.context.wait_for_event("page")
             await target_element.click()
 
             new_page = await new_page_future
@@ -292,15 +324,15 @@ class ExecutorWebsocket:
             return new_page
         except:
             await page.close()
-    
+
     async def scrape_information(self, page, selector):
         try:
             element_by_class = page.locator(selector).first
             information = await element_by_class.text_content()
             return information
         except:
-            return ''
-        
+            return ""
+
     async def speak_information(self, page, information):
         await self.edit_text(page, information)
         text_to_speech_instant(information)
@@ -309,211 +341,3 @@ class ExecutorWebsocket:
         await self.browser.context.close()
         print("Browser closed.")
         del sessions[str(data.get("id"))]
-
-
-    async def run_script(self, data):
-        new_page_data_notion = {
-            "action": "new_page",
-            "link": "https://www.notion.so/001cee55dcf84e2b94ff0970e8e98669?v=4e0c0a5351ad4dacaa16c175779eb6b7"
-        }
-
-        new_page_data = {
-            "action": "new_page",
-            "link": "https://www.linkedin.com/sales/search/people?query=(spellCorrectionEnabled%3Atrue%2CrecentSearchParam%3A(id%3A3338726818%2CdoLogHistory%3Atrue)%2Cfilters%3AList((type%3AFUNCTION%2Cvalues%3AList((id%3A11%2Ctext%3AHealthcare%2520Services%2CselectionType%3AINCLUDED)))%2C(type%3AREGION%2Cvalues%3AList((id%3A103644278%2Ctext%3AUnited%2520States%2CselectionType%3AINCLUDED)))%2C(type%3APROFILE_LANGUAGE%2Cvalues%3AList((id%3Aen%2Ctext%3AEnglish%2CselectionType%3AINCLUDED)))%2C(type%3ACOMPANY_HEADCOUNT%2Cvalues%3AList((id%3AB%2Ctext%3A1-10%2CselectionType%3AINCLUDED)%2C(id%3AC%2Ctext%3A11-50%2CselectionType%3AINCLUDED)))%2C(type%3APOSTED_ON_LINKEDIN%2Cvalues%3AList((id%3ARPOL%2Ctext%3APosted%2520on%2520LinkedIn%2CselectionType%3AINCLUDED)))%2C(type%3ALEAD_INTERACTIONS%2Cvalues%3AList((id%3ALIVP%2Ctext%3AViewed%2520profile%2CselectionType%3AEXCLUDED))))%2Ckeywords%3ADentist%2520Private%2520Practice)&sessionId=N3vEp2lFReuxJ6WPtAwzJg%3D%3D"
-        }
-
-
-        notion_page = await self.handle_action(json.dumps(new_page_data_notion))
-
-        time.sleep(3)
-        #await self.check_login(notion_page, "v=")
-
-        
-        linkedin_page = await self.handle_action(json.dumps(new_page_data))
-        time.sleep(3)
-        
-        await self.check_login(linkedin_page, "sales/login")
-        
-        time.sleep(3)
-
-        for _ in range(3):
-
-            await self.load_all_content(linkedin_page)
-            
-            await self.load_accessibility_tree(linkedin_page)
-            tree = await self.get_accessibility_tree(linkedin_page)
-
-            links = process_elements_links_manual(tree)
-            relevant_links = await self.filter_elements(links, "Go to")
-
-            
-
-            accounts = await self.sort_by_y_remove_dupes(linkedin_page, relevant_links)
-
-            for account in accounts:
-                profile_page = await self.open_new_page_and_focus(linkedin_page, account)
-
-                result = await self.click_button_based_on_selector(profile_page, "Open actions")
-
-                if not result:
-                    await profile_page.close()
-                    continue
-                
-                time.sleep(1)
-
-                direct_profile_page = await self.click_link_based_on_selector(profile_page, "View LinkedIn profile")
-
-                await profile_page.close()
-
-
-                time.sleep(2)
-                
-                current_url = direct_profile_page.url
-                
-                name = await self.scrape_information(direct_profile_page, "h1.text-heading-xlarge.inline.t-24.v-align-middle.break-words")
-
-                title = await self.scrape_information(direct_profile_page, ".text-body-medium.break-words")
-
-                location = await self.scrape_information(direct_profile_page, ".text-body-small.inline.t-black--light.break-words")
-
-                description = await self.scrape_information(direct_profile_page, "div.display-flex.ph5.pv3")
-
-
-                result = await self.click_button_based_on_selector(direct_profile_page, "More actions")
-
-                if not result:
-                    await direct_profile_page.close()
-                    continue
-
-                result = await self.click_button_based_on_selector(direct_profile_page, "to connect")
-
-                if not result:
-                    await direct_profile_page.close()
-                    continue
-
-                result = await self.click_button_based_on_selector(direct_profile_page, "Add a note")
-
-                if not result:
-                    await direct_profile_page.close()
-                    continue
-                
-                await self.speak_information(direct_profile_page, "I will now send a personalized message.")
-
-                information = title + description
-                user_info = user_information(information, main_schema)
-                
-                first_name = name_information(name)
-
-                first_name = first_name["first_name"]
-
-                industry = user_info["industry"].lower()
-                position = user_info["position"]
-
-                #software = software_answer(industry)
-                #soft = software["software"]
-
-                message = f"Hi {first_name},"
-                message2 = f"We automate the RCM process with AI end-to-end."
-                message3 = f"We can verify insurance, submit claims and appeals, and automate Explanation of Benefits reconciliation."  
-                message4 = "We're looking for limited pilot partners."
-                message5 = "Let's chat."
-
-                await direct_profile_page.keyboard.type(message, delay=10)
-
-                await direct_profile_page.keyboard.press('Enter')
-
-                await direct_profile_page.keyboard.type(message2, delay=10)
-
-                await direct_profile_page.keyboard.press('Enter')
-
-                await direct_profile_page.keyboard.type(message3, delay=10)
-
-                await direct_profile_page.keyboard.press('Enter')
-
-                await direct_profile_page.keyboard.type(message4, delay=10)
-
-                await direct_profile_page.keyboard.press('Enter')
-
-                await direct_profile_page.keyboard.type(message5, delay=10)
-
-                await self.click_button_based_on_selector(direct_profile_page, "Send now", False)
-
-                time.sleep(2)
-
-                await notion_page.bring_to_front()
-                await direct_profile_page.close()
-
-
-                result = await self.click_button_based_on_selector(notion_page, "New", True) 
-
-                
-
-
-                await notion_page.keyboard.type(name, delay=10)
-                time.sleep(1)
-                
-                await notion_page.keyboard.press('Tab')
-                time.sleep(1)
-
-                await notion_page.keyboard.type(current_url, delay=10)
-                time.sleep(1)
-
-                await notion_page.keyboard.press('Tab')
-                time.sleep(1)
-
-                print(location)
-                location = location.replace("\n", "")
-                location = location.strip()
-                await notion_page.keyboard.type(location, delay=10)
-                
-
-                await notion_page.keyboard.press('Tab')
-                time.sleep(1)
-
-                await notion_page.keyboard.type(industry, delay=10)
-                time.sleep(1)
-
-                await notion_page.keyboard.press('Tab')
-
-                time.sleep(1)
-                await notion_page.keyboard.type(position, delay=10)
-
-                time.sleep(1)
-                await notion_page.keyboard.press('Tab')
-
-                time.sleep(1)
-
-                await notion_page.keyboard.type(message, delay=10)
-                await notion_page.keyboard.type(' ')
-                await notion_page.keyboard.type(message2, delay=10)
-                await notion_page.keyboard.type(' ')
-                await notion_page.keyboard.type(message3, delay=10)
-                await notion_page.keyboard.type(' ')
-                await notion_page.keyboard.type(message4, delay=10)
-                await notion_page.keyboard.type(' ')
-                await notion_page.keyboard.type(message5, delay=10)
-
-                await notion_page.keyboard.press('Enter')
-
-
-                result = await self.click_button_based_on_selector(notion_page, "Close", False) 
-
-                await self.speak_information(notion_page, "I have added the information to the Notion page.")
-
-                await linkedin_page.bring_to_front()
-
-            result = await self.click_button_based_on_selector(linkedin_page, "Next")
-            
-
-            
-
-
-
-
-
-
-
-
-    
-
-    

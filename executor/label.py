@@ -1,6 +1,6 @@
 workman_id_generator = """
             ({ iframe_path, current_tf_id }) => {
-              WebQL_IDGenerator = class {
+              IDGenerator = class {
                 constructor() {
                   this.currentID = current_tf_id || 0;
                 }
@@ -11,7 +11,7 @@ workman_id_generator = """
                 }
               };
 
-              const _tf_id_generator = new window.WebQL_IDGenerator();
+              const _tf_id_generator = new window.IDGenerator();
 
               function extractAttributes(node) {
                 const attributes = { html_tag: node.nodeName.toLowerCase() };

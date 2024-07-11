@@ -20,21 +20,24 @@ from browserbase import start_browser_session
 
 # Import configurations from config.py
 from config import (
-    SENTRY_DSN, SENTRY_TRACES_SAMPLE_RATE, SENTRY_ENVIRONMENT,
-    CORS_ORIGINS
+    SENTRY_DSN,
+    SENTRY_TRACES_SAMPLE_RATE,
+    SENTRY_ENVIRONMENT,
+    CORS_ORIGINS,
 )
 
 # Initialize Sentry with variables from config.py
 sentry_sdk.init(
     dsn=SENTRY_DSN,
     traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
-    environment=SENTRY_ENVIRONMENT
+    environment=SENTRY_ENVIRONMENT,
 )
 
-if sys.platform == 'win32':
+if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 load_dotenv(find_dotenv())
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -46,7 +49,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 logging.basicConfig(
-    #level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+    # level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -59,9 +62,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/sentry-debug")
 async def trigger_error():
     division_by_zero = 1 / 0
+
 
 @app.post("/terminate_session", response_model=TerminateSessionResponse)
 async def terminate_session(terminate_session_request: TerminateSessionRequest):
@@ -98,7 +103,7 @@ async def create_session(create_session_request: CreateSessionRequest):
         print("Session already exists")
         browser = sessions[session_id]
         await browser.close()
-    
+
     browser = await initialize_browser_session(session_id)
     sessions[session_id] = browser
     return {"session_id": session_id}
@@ -117,7 +122,7 @@ async def send_command_navigate(command_request_navigate: CommandRequestNavigate
 
     if cookie is not None:
         for c in cookie:
-            c['sameSite'] = 'None'
+            c["sameSite"] = "None"
             await browser.add_cookie(c)
 
     try:
@@ -158,7 +163,6 @@ async def send_command_press(command_request_press: CommandRequestPress):
 
         result = json.loads(result)
 
-
         action = result.get("command")
         parameters = result.get("parameters", [])
 
@@ -190,7 +194,6 @@ async def send_command_search(command_request_search: CommandRequestSearch):
 
         result = json.loads(result)
 
-
         action = result.get("command")
         parameters = result.get("parameters", [])
 
@@ -203,7 +206,7 @@ async def send_command_search(command_request_search: CommandRequestSearch):
     except Exception as e:
         # Handle exceptions (e.g., command failures, timeouts)
         return {"status": "Error", "message": str(e)}
-    
+
 
 @app.post("/send_cached_search")
 async def send_cached_search(command_cache_search: CacheRequest):
@@ -217,7 +220,7 @@ async def send_cached_search(command_cache_search: CacheRequest):
 
     try:
         await browser.search_cache(
-                parameters[0], parameters[1], parameters[2], parameters[3]
+            parameters[0], parameters[1], parameters[2], parameters[3]
         )
 
         # Return the result in the response
@@ -226,7 +229,7 @@ async def send_cached_search(command_cache_search: CacheRequest):
     except Exception as e:
         # Handle exceptions (e.g., command failures, timeouts)
         return {"status": "Error", "message": str(e)}
-    
+
 
 @app.post("/send_command_click", response_model=CommandResponse)
 async def send_command_click(command_request_search: CommandRequestClick):
@@ -236,7 +239,7 @@ async def send_command_click(command_request_search: CommandRequestClick):
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Invalid session ID")
 
-    browser = sessions[session_id]        
+    browser = sessions[session_id]
 
     try:
         future = await browser.click(query)
@@ -245,10 +248,8 @@ async def send_command_click(command_request_search: CommandRequestClick):
 
         result = json.loads(result)
 
-
         action = result.get("command")
         parameters = result.get("parameters", [])
-
 
         # Return the result in the response
         return {
@@ -279,7 +280,7 @@ async def send_cached_click(command_cache_search: CacheRequest):
     except Exception as e:
         # Handle exceptions (e.g., command failures, timeouts)
         return {"status": "Error", "message": str(e)}
-    
+
 
 @app.post("/send_fill_forms")
 async def send_fill_forms(fill_forms: FillForms):
@@ -297,10 +298,9 @@ async def send_fill_forms(fill_forms: FillForms):
 
         result = json.loads(result)
 
-
         action = result.get("command")
         parameters = result.get("parameters", [])
-        
+
         # Return the result in the response
         return {
             "status": "Command executed",
@@ -310,7 +310,7 @@ async def send_fill_forms(fill_forms: FillForms):
     except Exception as e:
         # Handle exceptions (e.g., command failures, timeouts)
         return {"status": "Error", "message": str(e)}
-    
+
 
 @app.post("/send_cached_fill_forms")
 async def send_cached_fill_forms(command_cache_search: CacheRequest):
@@ -343,7 +343,6 @@ async def session_ready(session_id: str):
         return {"ready": False}
 
     browser = sessions[session_id]
-
 
     return {"ready": browser.ready}
 
@@ -394,7 +393,10 @@ async def get_accessibility_tree(session_id: str, query: AccessibilityTreeQuery)
             accessibility_tree = await session.get_accessibility_tree(query)
             return {"status": "Success", "accessibility_tree": accessibility_tree}
         except Exception as e:
-            return {"status": "Error", "message": f"Error retrieving accessibility tree with query '{query.query}': {str(e)}"}
+            return {
+                "status": "Error",
+                "message": f"Error retrieving accessibility tree with query '{query.query}': {str(e)}",
+            }
     else:
         return {"status": "Error", "message": "Invalid or missing session_id."}
 
@@ -409,11 +411,13 @@ async def get_websocket_executor(websocket: WebSocket, id: str = Query(...)):
     # Now the ExecutorWebsocket is initialized with both the WebSocket and the ID
     return ExecutorWebsocket(websocket, id)
 
+
 @app.websocket("/execute")
-async def websocket_endpoint(executor: ExecutorWebsocket = Depends(get_websocket_executor)):
+async def websocket_endpoint(
+    executor: ExecutorWebsocket = Depends(get_websocket_executor),
+):
     await executor.connect()
     await executor.receive_and_send()
-
 
 
 app.include_router(extractor_router)
@@ -421,7 +425,7 @@ app.include_router(extractor_router)
 
 async def run_browser_session(session_id):
     async with async_playwright() as playwright:
-        ws_url = f'wss://api.browserbase.com?apiKey=DvApQM40mJcPElE2ctsnQfAmrSc&sessionId={session_id}'
+        ws_url = f"wss://api.browserbase.com?apiKey=DvApQM40mJcPElE2ctsnQfAmrSc&sessionId={session_id}"
         browser = await playwright.chromium.connect_over_cdp(ws_url)
         context = browser.contexts[0]
         page = context.pages[0]
@@ -434,7 +438,8 @@ async def run_browser_session(session_id):
         await page.goto("https://google.com")
         print("sleeping")
         await asyncio.sleep(1200)  # Using asyncio.sleep instead of time.sleep
-        #await browser.close()
+        # await browser.close()
+
 
 @app.post("/start-session")
 async def run_session(background_tasks: BackgroundTasks):
@@ -450,7 +455,7 @@ async def run_session(background_tasks: BackgroundTasks):
 async def print_session(session_id: str):
     print(f"Session ID: {session_id}")
     async with async_playwright() as playwright:
-        ws_url = f'wss://api.browserbase.com?apiKey=DvApQM40mJcPElE2ctsnQfAmrSc&sessionId={session_id}'
+        ws_url = f"wss://api.browserbase.com?apiKey=DvApQM40mJcPElE2ctsnQfAmrSc&sessionId={session_id}"
         browser = await playwright.chromium.connect_over_cdp(ws_url)
         context = browser.contexts[0]
         page = context.pages[0]
@@ -459,13 +464,13 @@ async def print_session(session_id: str):
         await page.wait_for_load_state("networkidle")
 
         # Type an email with delay
-        await page.keyboard.type('daniel@workman.so', delay=10)
+        await page.keyboard.type("daniel@workman.so", delay=10)
 
         # Press the Tab key
-        await page.keyboard.press('Tab')
+        await page.keyboard.press("Tab")
 
         # Type a password with delay
-        await page.keyboard.type('fuE#S4Fce2!!n^', delay=10)
+        await page.keyboard.type("fuE#S4Fce2!!n^", delay=10)
 
         # Click on the log in button using aria-label for better accessibility
         await page.click('button[aria-label="Log in"]')
@@ -474,31 +479,32 @@ async def print_session(session_id: str):
         await page.wait_for_timeout(1000)
 
         # Perform a series of actions to interact with elements on the page
-        await page.click('#board-header-view-bar button.add-with-dropdown.button_1c432f8420.sizeSmall_fafc138ba4.kindPrimary_f26ee2d0a5.colorPrimary_5df49ae5ad')
+        await page.click(
+            "#board-header-view-bar button.add-with-dropdown.button_1c432f8420.sizeSmall_fafc138ba4.kindPrimary_f26ee2d0a5.colorPrimary_5df49ae5ad"
+        )
         await page.wait_for_timeout(1000)
-        await page.keyboard.type('Lebron James', delay=10)
+        await page.keyboard.type("Lebron James", delay=10)
         await page.wait_for_timeout(1000)
-        await page.keyboard.press('Tab')
+        await page.keyboard.press("Tab")
         await page.wait_for_timeout(1000)
-        await page.keyboard.press('Tab')
+        await page.keyboard.press("Tab")
         await page.wait_for_timeout(1000)
-        await page.keyboard.press('Enter')
+        await page.keyboard.press("Enter")
         await page.wait_for_timeout(1000)
-        await page.keyboard.type('6784882822', delay=10)
-        await page.keyboard.press('Enter')
+        await page.keyboard.type("6784882822", delay=10)
+        await page.keyboard.press("Enter")
         await page.wait_for_timeout(1000)
-        await page.keyboard.press('Tab')
+        await page.keyboard.press("Tab")
         await page.wait_for_timeout(1000)
-        await page.keyboard.press('Enter')
+        await page.keyboard.press("Enter")
         await page.wait_for_timeout(1000)
-        await page.keyboard.type('daniel442li@gmail.com', delay=10)
+        await page.keyboard.type("daniel442li@gmail.com", delay=10)
         await page.wait_for_timeout(1000)
-        await page.keyboard.press('Enter')
+        await page.keyboard.press("Enter")
 
         print("went to page")
 
     return {"message": f"Printed session ID: {session_id}"}
-
 
 
 @app.get("/")
@@ -506,6 +512,6 @@ def read_root():
     return {"Welcome to our API :-)"}
 
 
-# uvicorn main:app 
+# uvicorn main:app
 
 # uvicorn main:app --host 0.0.0.0 --port 8000 --reload

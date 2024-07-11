@@ -14,6 +14,7 @@ import tldextract
 from urllib.parse import urlparse
 import os
 
+
 class BrowserAutomation:
     def __init__(self, session_id):
         self.session_id = session_id
@@ -30,7 +31,6 @@ class BrowserAutomation:
         self.activity_timeout_seconds = 120
         self.is_active = True
         self._current_tf_id = 0
-
 
     async def add_cookie(self, cookie):
         self.cookies.append(cookie)
@@ -50,7 +50,9 @@ class BrowserAutomation:
         """Monitors for inactivity and closes the browser if the timeout is reached."""
         while True:
             await asyncio.sleep(5)  # Check every 5 seconds
-            if datetime.now() - self.last_activity_time > timedelta(seconds=self.activity_timeout_seconds):
+            if datetime.now() - self.last_activity_time > timedelta(
+                seconds=self.activity_timeout_seconds
+            ):
                 print("Inactivity timeout reached, closing browser.")
                 await self.close()
                 break  # Stop the watchdog after closing the browser
@@ -67,14 +69,16 @@ class BrowserAutomation:
 
     async def click_cache(self, frame, selector):
         self.update_activity_time()
-        #await self.page.get_by_role("button", name="Add Transaction").check()
+        # await self.page.get_by_role("button", name="Add Transaction").check()
         print(frame)
         print(selector)
         # await self.page.get_by_role("button", name=re.compile("Save", re.IGNORECASE)).click()
 
         try:
             # locator = self.page.get_by_role("button", name=re.compile("Save", re.IGNORECASE))
-            locator = self.page.get_by_role(selector, name=re.compile(frame, re.IGNORECASE)).first
+            locator = self.page.get_by_role(
+                selector, name=re.compile(frame, re.IGNORECASE)
+            ).first
             await locator.hover()
             await locator.click()
 
@@ -182,7 +186,7 @@ class BrowserAutomation:
         extracted = tldextract.extract(url)
         # Check if the suffix (TLD) is present
         return bool(extracted.suffix)
-    
+
     def has_correct_protocol(self, url, expected_protocol):
         parsed_url = urlparse(url)
         return parsed_url.scheme == expected_protocol
@@ -200,20 +204,18 @@ class BrowserAutomation:
                 if valid_domain:
                     has_correct_protocol = self.has_correct_protocol(link, "https")
                     if not has_correct_protocol:
-                        link = "https://" + link                        
+                        link = "https://" + link
                 else:
                     search_url = f"https://www.google.com/search?q={passedLink}"
                     link = search_url
-                    
 
-
-                print(link)               
+                print(link)
                 await self.page.context.add_cookies(self.cookies)
 
                 print(self.cookies)
 
                 await self.page.goto(link)
-                
+
                 cached_command = {"command": "cache_navigate", "parameters": [link]}
                 future.set_result(json.dumps(cached_command))
 
@@ -234,8 +236,8 @@ class BrowserAutomation:
             try:
                 # Take a screenshot using playwright and save it
                 screenshot_path = f"screenshots/{description.replace(' ', '_')}.png"
-                #await self.page.screenshot(path=screenshot_path, fullPage=True)
-                
+                # await self.page.screenshot(path=screenshot_path, fullPage=True)
+
                 elements, choices, multi_choice = await get_multi_inputs(self.page)
 
                 selection = await answer_multiple_choice(description, multi_choice)
@@ -246,13 +248,16 @@ class BrowserAutomation:
 
                 selector = target_element[-2]
 
-
                 button_text = target_element[1]
 
                 type_selector = target_element[2]
                 type_selector_pattern = r'type="([^"]*)"'
-                type_selector_match = re.search(type_selector_pattern, str(type_selector))
-                type_selector_parsed = type_selector_match.group(1) if type_selector_match else None
+                type_selector_match = re.search(
+                    type_selector_pattern, str(type_selector)
+                )
+                type_selector_parsed = (
+                    type_selector_match.group(1) if type_selector_match else None
+                )
 
                 await selector.evaluate("element => element.click()", timeout=10000)
 
@@ -273,7 +278,6 @@ class BrowserAutomation:
                 cached_command = {
                     "command": "click_cache",
                     "parameters": [button_text, type_selector_parsed],
-
                 }
                 future.set_result(json.dumps(cached_command))
             except Exception as e:
@@ -309,63 +313,52 @@ class BrowserAutomation:
 
         async def perform_form_fill():
             gen_parameters = []
-            
-            elements, choices, multi_choice = await get_multi_inputs(
-                self.page, "input"
-            )
 
+            elements, choices, multi_choice = await get_multi_inputs(self.page, "input")
 
-            selection = await answer_multiple_choice_forms(
-                multi_choice
-            )
+            selection = await answer_multiple_choice_forms(multi_choice)
 
             count = 1
             for input in selection:
                 try:
-                    
+
                     answer = input["answer"]
                     label = input["label"]
                     type = input["type"]
                     print(label)
                     element_id = await self._get_index_from_option_name(answer)
                     target_element = elements[int(choices[element_id][0])]
-                    #parent_node = target_element[1]
+                    # parent_node = target_element[1]
 
-
-                    
                     selector = target_element[-2]
 
                     print(selector)
-                    
+
                     if type == "input":
                         await selector.clear(timeout=1000)
-                        #await selector.fill("[FILL FORM #" + str(count) + " HERE]", timeout=10000)
+                        # await selector.fill("[FILL FORM #" + str(count) + " HERE]", timeout=10000)
 
                         await selector.fill(str(label) + " Input", timeout=1000)
 
                     if type == "file":
                         await selector.set_input_files("./Resume.pdf")
-                    
+
                     if type == "select":
                         await selector.select_option(value=selector.first())
-                    
 
-
-                    #pattern = r"parent_node: ([\w\s]+) name="
-                    #parent_node_text = re.search(pattern, parent_node).group(1) if re.search(pattern, parent_node) else None
+                    # pattern = r"parent_node: ([\w\s]+) name="
+                    # parent_node_text = re.search(pattern, parent_node).group(1) if re.search(pattern, parent_node) else None
 
                     frame_url_pattern = r"url='(.*?)'"
                     frame_url_match = re.search(frame_url_pattern, str(selector))
-                    frame_url = (
-                        frame_url_match.group(1) if frame_url_match else None
-                    )
+                    frame_url = frame_url_match.group(1) if frame_url_match else None
 
                     # Pattern for extracting the selector
                     selector_pattern = r"selector='(.*?)'"
                     selector_match = re.search(selector_pattern, str(selector))
                     selector = selector_match.group(1) if selector_match else None
 
-                    #gen_parameters.append([frame_url, selector, "Form #" + str(count), "Default"])
+                    # gen_parameters.append([frame_url, selector, "Form #" + str(count), "Default"])
 
                     gen_parameters.append([frame_url, selector, label, "Default"])
                     count += 1
@@ -391,41 +384,36 @@ class BrowserAutomation:
         if self.recorder_page is not None:
             await self.recorder_page.close()
             self.recorder_page = None
-        
+
         self.recorder_page = await self.context.new_page()
         await self.recorder_page.goto(HTML_PATH + "=" + self.session_id)
-        #await self.recorder_page.reload()
-        #await self.page.bring_to_front()
-
-        
+        # await self.recorder_page.reload()
+        # await self.page.bring_to_front()
 
     async def start(self):
         future = asyncio.Future()
         self.playwright = await async_playwright().start()
-        
-        if os.name == 'nt':  # Windows
-            extension_path = os.path.join(os.getcwd(), 'internal-extension')
+
+        if os.name == "nt":  # Windows
+            extension_path = os.path.join(os.getcwd(), "internal-extension")
         else:
-            extension_path = './internal-extension'
+            extension_path = "./internal-extension"
         self.context = await self.playwright.chromium.launch_persistent_context(
             user_data_dir=f"./user_data_{self.session_id}",
             headless=False,
-            args=[#f'--auto-select-desktop-capture-source={self.session_id}',
-                  f'--auto-select-tab-capture-source-by-title=Google',
-                  f'--disable-extensions-except={extension_path}',
-                  f'--load-extension={extension_path}',
-                  '--enable-blink-features=AccessibilityObjectModel',
-
-                  
-                  
-                  ]
+            args=[  # f'--auto-select-desktop-capture-source={self.session_id}',
+                f"--auto-select-tab-capture-source-by-title=Google",
+                f"--disable-extensions-except={extension_path}",
+                f"--load-extension={extension_path}",
+                "--enable-blink-features=AccessibilityObjectModel",
+            ],
         )
-        
+
         self.page = await self.context.new_page()
         await stealth_async(self.page)
 
         await self.page.goto("https://google.com/")
-        await self.page.wait_for_load_state('load')
+        await self.page.wait_for_load_state("load")
 
         self.ready = True
         self.is_active = True
@@ -445,7 +433,6 @@ class BrowserAutomation:
             await self.browser.close()
             self.browser = None
 
-    
     async def set_ready(self):
         self.ready = not self.ready
 
@@ -481,7 +468,7 @@ class BrowserAutomation:
         except Exception as e:
             print(f"Error during hover: {e}")
             raise
-    
+
     async def press_keys(self, key: str):
         self.update_activity_time()
         try:
@@ -489,7 +476,7 @@ class BrowserAutomation:
         except Exception as e:
             print(f"Error during pressing keys: {e}")
             raise
-    
+
     async def go_back(self):
         """Navigates one step back in the browser's history."""
         self.update_activity_time()
@@ -517,12 +504,12 @@ class BrowserAutomation:
             # Execute JavaScript to scroll the window vertically by the specified amount
             # Positive amount scrolls down, negative amount scrolls up
             await self.page.evaluate(f"window.scrollBy(0, {amount});")
-            print(f"Scrolled {'down' if amount > 0 else 'up'} by {abs(amount)} pixels successfully.")
+            print(
+                f"Scrolled {'down' if amount > 0 else 'up'} by {abs(amount)} pixels successfully."
+            )
         except Exception as e:
             print(f"Error during scrolling by {amount} pixels: {e}")
             raise
-    
-    
 
     def _get_modify_dom_and_update_current_tf_id_js_code(self) -> str:
         """Returns the JavaScript code that is used to modify the DOM adn return the updated current_tf_id."""
@@ -651,7 +638,6 @@ class BrowserAutomation:
               return _tf_id_generator.currentID;
             };
         """
-    
 
     async def get_accessibility_tree(self, query):
         print(query)
@@ -677,19 +663,23 @@ class BrowserAutomation:
             {"current_tf_id": self._current_tf_id},
         )
 
-        accessibility_tree = await self.page.accessibility.snapshot(interesting_only=False)
+        accessibility_tree = await self.page.accessibility.snapshot(
+            interesting_only=False
+        )
         print(accessibility_tree)
 
         request_data = {
-                "query": f"{fish_query}",
-                "accessibility_tree": accessibility_tree,
-                "metadata": {"url": self.page.url},
-            }
+            "query": f"{fish_query}",
+            "accessibility_tree": accessibility_tree,
+            "metadata": {"url": self.page.url},
+        }
         url = "https://webql.tinyfish.io" + "/api/query"
-        headers = {"X-API-Key": "QIQJ5WvwElxNUNl5_EaiXcWb0RqxoZzXlsRE0q--g7hCvnAz941WAQ"}
+        headers = {
+            "X-API-Key": "QIQJ5WvwElxNUNl5_EaiXcWb0RqxoZzXlsRE0q--g7hCvnAz941WAQ"
+        }
         response = requests.post(url, json=request_data, headers=headers, timeout=500)
         pretty_response = json.dumps(response.json(), indent=4)
-        
+
         response_dict = json.loads(pretty_response)
 
         print(response_dict)
@@ -710,4 +700,3 @@ class BrowserAutomation:
         new_page = await self.page.context.new_page()
         await new_page.goto(link)
         return new_page
-

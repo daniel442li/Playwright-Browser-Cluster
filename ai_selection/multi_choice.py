@@ -26,17 +26,20 @@ def format_options(choices):
     option_text += multi_choice + "\n\n"
     return option_text
 
+
 def format_choices(elements, candidate_ids):
     converted_elements = [
-        f'<{element[2]} id="{i}">'
-        + (
-            element[1]
-            if len(element[1].split()) < 30
-            else " ".join(element[1].split()[:30]) + "..."
+        (
+            f'<{element[2]} id="{i}">'
+            + (
+                element[1]
+                if len(element[1].split()) < 30
+                else " ".join(element[1].split()[:30]) + "..."
+            )
+            + f"</{element[-1]}>"
+            if element[2] != "select"
+            else f'<{element[2]} id="{i}">' + (element[1]) + f"</{element[-1]}>"
         )
-        + f"</{element[-1]}>"
-        if element[2] != "select"
-        else f'<{element[2]} id="{i}">' + (element[1]) + f"</{element[-1]}>"
         for i, element in enumerate(elements)
     ]
 
@@ -233,7 +236,7 @@ async def get_element_data(element, tag_name):
 
 
 async def get_elements_with_playwright(page, type="default"):
-    #changing these just for jobs
+    # changing these just for jobs
     interactive_elements_selectors = [
         "a",
         "button",
@@ -275,7 +278,7 @@ async def get_elements_with_playwright(page, type="default"):
             tag_name = selector.replace(':not([tabindex="-1"])', "")
             tag_name = tag_name.replace(':not([contenteditable="false"])', "")
             task = get_element_data(element, tag_name)
-            
+
             tasks.append(task)
 
     results = await asyncio.gather(*tasks)
