@@ -9,7 +9,6 @@ import re
 from playwright_stealth import stealth_async
 from datetime import datetime, timedelta
 from config import HTML_PATH
-import requests
 import tldextract
 from urllib.parse import urlparse
 import os
@@ -69,10 +68,6 @@ class BrowserAutomation:
 
     async def click_cache(self, frame, selector):
         self.update_activity_time()
-        # await self.page.get_by_role("button", name="Add Transaction").check()
-        print(frame)
-        print(selector)
-        # await self.page.get_by_role("button", name=re.compile("Save", re.IGNORECASE)).click()
 
         try:
             # locator = self.page.get_by_role("button", name=re.compile("Save", re.IGNORECASE))
@@ -84,14 +79,6 @@ class BrowserAutomation:
 
         except Exception as e:
             print(f"Error: {e}")
-
-        # my_frame = self.page.frame(url=frame)
-        # if my_frame:
-        #     new_locator = my_frame.locator(selector)
-        # else:
-        #     new_locator = self.page.locator(selector)
-
-        # await new_locator.evaluate("element => element.click()", timeout=10000)
 
     async def press_cache(self, key):
         self.update_activity_time()
@@ -234,10 +221,6 @@ class BrowserAutomation:
 
         async def perform_click():
             try:
-                # Take a screenshot using playwright and save it
-                screenshot_path = f"screenshots/{description.replace(' ', '_')}.png"
-                # await self.page.screenshot(path=screenshot_path, fullPage=True)
-
                 elements, choices, multi_choice = await get_multi_inputs(self.page)
 
                 selection = await answer_multiple_choice(description, multi_choice)
@@ -263,17 +246,11 @@ class BrowserAutomation:
 
                 frame_url_pattern = r"url='(.*?)'"
                 frame_url_match = re.search(frame_url_pattern, str(selector))
-                frame_url = frame_url_match.group(1) if frame_url_match else None
 
                 # Pattern for extracting the selector
                 selector_pattern = r"selector='(.*?)'"
                 selector_match = re.search(selector_pattern, str(selector))
                 selector = selector_match.group(1) if selector_match else None
-
-                # cached_command = {
-                #     "command": "click_cache",
-                #     "parameters": [frame_url, selector],
-                # }
 
                 cached_command = {
                     "command": "click_cache",
@@ -336,8 +313,6 @@ class BrowserAutomation:
 
                     if type == "input":
                         await selector.clear(timeout=1000)
-                        # await selector.fill("[FILL FORM #" + str(count) + " HERE]", timeout=10000)
-
                         await selector.fill(str(label) + " Input", timeout=1000)
 
                     if type == "file":
@@ -345,9 +320,6 @@ class BrowserAutomation:
 
                     if type == "select":
                         await selector.select_option(value=selector.first())
-
-                    # pattern = r"parent_node: ([\w\s]+) name="
-                    # parent_node_text = re.search(pattern, parent_node).group(1) if re.search(pattern, parent_node) else None
 
                     frame_url_pattern = r"url='(.*?)'"
                     frame_url_match = re.search(frame_url_pattern, str(selector))
@@ -357,8 +329,6 @@ class BrowserAutomation:
                     selector_pattern = r"selector='(.*?)'"
                     selector_match = re.search(selector_pattern, str(selector))
                     selector = selector_match.group(1) if selector_match else None
-
-                    # gen_parameters.append([frame_url, selector, "Form #" + str(count), "Default"])
 
                     gen_parameters.append([frame_url, selector, label, "Default"])
                     count += 1
@@ -387,8 +357,6 @@ class BrowserAutomation:
 
         self.recorder_page = await self.context.new_page()
         await self.recorder_page.goto(HTML_PATH + "=" + self.session_id)
-        # await self.recorder_page.reload()
-        # await self.page.bring_to_front()
 
     async def start(self):
         future = asyncio.Future()
@@ -510,190 +478,6 @@ class BrowserAutomation:
         except Exception as e:
             print(f"Error during scrolling by {amount} pixels: {e}")
             raise
-
-    def _get_modify_dom_and_update_current_tf_id_js_code(self) -> str:
-        """Returns the JavaScript code that is used to modify the DOM adn return the updated current_tf_id."""
-        # Future scope: Move to a js file, read it and return it
-        return """
-            ({ iframe_path, current_tf_id }) => {
-              WebQL_IDGenerator = class {
-                constructor() {
-                  this.currentID = current_tf_id || 0;
-                }
-
-                getNextID() {
-                  this.currentID += 1;
-                  return this.currentID;
-                }
-              };
-
-              const _tf_id_generator = new window.WebQL_IDGenerator();
-
-              function extractAttributes(node) {
-                const attributes = { html_tag: node.nodeName.toLowerCase() };
-                const skippedAttributes = ['style', 'srcdoc'];
-
-                for (let i = 0; i < node.attributes.length; i++) {
-                  const attribute = node.attributes[i];
-                  if (!attribute.specified || !skippedAttributes.includes(attribute.name)) {
-                    attributes[attribute.name] = attribute.value.slice(0, 100) || true;
-                  }
-                }
-
-                return attributes;
-              }
-
-              function pre_process_dom_node(node) {
-                if (!node) {
-                  return;
-                }
-                if (node.hasAttribute('aria-keyshortcuts')) {
-                  try {
-                    ariaKeyShortcuts = JSON.parse(node.getAttribute('aria-keyshortcuts'));
-                    if (ariaKeyShortcuts.hasOwnProperty('html_tag')) {
-                      if (ariaKeyShortcuts.hasOwnProperty('aria-keyshortcuts')) {
-                        ariaKeyShortcutsInsideAriaKeyShortcuts =
-                          ariaKeyShortcuts['aria-keyshortcuts'];
-                        node.setAttribute(
-                          'aria-keyshortcuts',
-                          ariaKeyShortcutsInsideAriaKeyShortcuts
-                        );
-                      } else {
-                        node.removeAttribute('aria-keyshortcuts');
-                      }
-                    }
-                  } catch (e) {
-                    //aria-keyshortcuts is not a valid json, proceed with current aria-keyshortcuts value
-                  }
-                }
-
-                let currentChildNodes = node.childNodes;
-                if (node.shadowRoot) {
-                    const childrenNodeList = Array.from(node.shadowRoot.children);
-
-                    if (childrenNodeList.length > 0) {
-                        currentChildNodes = Array.from(childrenNodeList);
-                    } else if (node.shadowRoot.textContent.trim() !== '') {
-                        node.setAttribute('aria-label', node.shadowRoot.textContent.trim());
-                    }
-                } else if (node.tagName === 'SLOT') {
-                    currentChildNodes = node.assignedNodes({ flatten: true });
-                }
-
-                tfId = _tf_id_generator.getNextID();
-
-                node.setAttribute('tf623_id', tfId);
-
-                if (iframe_path) {
-                    node.setAttribute('iframe_path', iframe_path);
-                }
-                node.setAttribute(
-                    'aria-keyshortcuts',
-                    JSON.stringify(extractAttributes(node))
-                );
-
-                const childNodes = Array.from(currentChildNodes).filter((childNode) => {
-                  return (
-                    childNode.nodeType === Node.ELEMENT_NODE ||
-                    (childNode.nodeType === Node.TEXT_NODE &&
-                      childNode.textContent.trim() !== '')
-                  );
-                });
-                for (let i = 0; i < childNodes.length; i++) {
-                  let childNode = childNodes[i];
-                  if (childNode.nodeType === Node.TEXT_NODE) {
-                    const text = childNode.textContent.trim();
-                    if (text) {
-                      if (childNodes.length > 1) {
-                        const span = document.createElement('span');
-                        span.textContent = text;
-                        node.insertBefore(span, childNode);
-                        node.removeChild(childNode);
-                        childNode = span;
-                      } else if (!node.hasAttribute('aria-label')) {
-                        const structureTags = [
-                          'a',
-                          'button',
-                          'h1',
-                          'h2',
-                          'h3',
-                          'h4',
-                          'h5',
-                          'h6',
-                          'script',
-                          'style',
-                        ];
-                        if (!structureTags.includes(node.nodeName.toLowerCase())) {
-                          node.setAttribute('aria-label', text);
-                        }
-                      }
-                    }
-                  }
-                  if (childNode.nodeType === Node.ELEMENT_NODE) {
-                    pre_process_dom_node(childNode);
-                  }
-                }
-              }
-              pre_process_dom_node(document.documentElement);
-              return _tf_id_generator.currentID;
-            };
-        """
-
-    async def get_accessibility_tree(self, query):
-        print(query)
-
-        list_query = query + "[]"
-        fish_query = f"""
-        {{
-            {list_query}
-        }}
-        """
-
-        fish_query = """
-            {
-                notes[]
-                {
-                    title
-                }
-            }"""
-
-        self._current_tf_id = 0
-        self._current_tf_id = await self.page.evaluate(
-            self._get_modify_dom_and_update_current_tf_id_js_code(),
-            {"current_tf_id": self._current_tf_id},
-        )
-
-        accessibility_tree = await self.page.accessibility.snapshot(
-            interesting_only=False
-        )
-        print(accessibility_tree)
-
-        request_data = {
-            "query": f"{fish_query}",
-            "accessibility_tree": accessibility_tree,
-            "metadata": {"url": self.page.url},
-        }
-        url = "https://webql.tinyfish.io" + "/api/query"
-        headers = {
-            "X-API-Key": "QIQJ5WvwElxNUNl5_EaiXcWb0RqxoZzXlsRE0q--g7hCvnAz941WAQ"
-        }
-        response = requests.post(url, json=request_data, headers=headers, timeout=500)
-        pretty_response = json.dumps(response.json(), indent=4)
-
-        response_dict = json.loads(pretty_response)
-
-        print(response_dict)
-
-        print("hello")
-        print(len(response_dict[query]))
-
-        print(response_dict[query])
-
-        for element in response_dict[query]:
-            print(element)
-            element_id = element["tf623_id"]
-            print(element_id)
-            element = self.page.locator(f'[tf623_id="{element_id}"]')
 
     async def new_page(self, link):
         self.update_activity_time()
